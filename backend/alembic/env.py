@@ -1,10 +1,11 @@
-from logging.config import fileConfig
+﻿from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
+from app.models import User  # noqa: F401
 
 # Import models here as they are created so Alembic can discover them.
 # Example: from app.models import user  # noqa: F401
@@ -65,3 +66,4 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+

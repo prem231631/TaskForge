@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -74,6 +73,20 @@ def auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def create_workspace(
+    client: TestClient,
+    token: str,
+    name: str = "Test Workspace",
+) -> dict:
+    response = client.post(
+        "/workspaces",
+        headers=auth_headers(token),
+        json={"name": name},
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
 def test_create_workspace_assigns_owner_role(client: TestClient):
     token = register_and_login(client, "workspace-owner@example.com")
 
@@ -131,19 +144,8 @@ def test_user_only_lists_their_workspaces(client: TestClient):
     first_token = register_and_login(client, "first-user@example.com")
     second_token = register_and_login(client, "second-user@example.com")
 
-    first_workspace = client.post(
-        "/workspaces",
-        headers=auth_headers(first_token),
-        json={"name": "First Workspace"},
-    )
-    second_workspace = client.post(
-        "/workspaces",
-        headers=auth_headers(second_token),
-        json={"name": "Second Workspace"},
-    )
-
-    assert first_workspace.status_code == 201
-    assert second_workspace.status_code == 201
+    first_workspace = create_workspace(client, first_token, "First Workspace")
+    second_workspace = create_workspace(client, second_token, "Second Workspace")
 
     response = client.get(
         "/workspaces",
@@ -154,25 +156,20 @@ def test_user_only_lists_their_workspaces(client: TestClient):
     workspaces = response.json()
 
     assert len(workspaces) == 1
+    assert workspaces[0]["id"] == first_workspace["id"]
     assert workspaces[0]["name"] == "First Workspace"
     assert workspaces[0]["role"] == "owner"
+    assert second_workspace["id"] != first_workspace["id"]
 
 
 def test_non_member_cannot_view_workspace(client: TestClient):
     owner_token = register_and_login(client, "owner-access@example.com")
     other_token = register_and_login(client, "other-access@example.com")
 
-    created = client.post(
-        "/workspaces",
-        headers=auth_headers(owner_token),
-        json={"name": "Private Workspace"},
-    )
-
-    assert created.status_code == 201
-    workspace_id = created.json()["id"]
+    workspace = create_workspace(client, owner_token, "Private Workspace")
 
     response = client.get(
-        f"/workspaces/{workspace_id}",
+        f"/workspaces/{workspace['id']}",
         headers=auth_headers(other_token),
     )
 
@@ -186,10 +183,19 @@ def test_workspace_endpoints_require_authentication(client: TestClient):
     )
     list_response = client.get("/workspaces")
     detail_response = client.get("/workspaces/1")
+    members_response = client.get("/workspaces/1/members")
+    add_response = client.post(
+        "/workspaces/1/members",
+        json={"email": "member@example.com"},
+    )
+    remove_response = client.delete("/workspaces/1/members/2")
 
     assert create_response.status_code == 401
     assert list_response.status_code == 401
     assert detail_response.status_code == 401
+    assert members_response.status_code == 401
+    assert add_response.status_code == 401
+    assert remove_response.status_code == 401
 
 
 def test_workspace_name_must_not_be_blank(client: TestClient):
@@ -202,3 +208,168 @@ def test_workspace_name_must_not_be_blank(client: TestClient):
     )
 
     assert response.status_code == 422
+
+
+def test_owner_can_list_workspace_members(client: TestClient):
+    token = register_and_login(client, "list-owner@example.com")
+    workspace = create_workspace(client, token, "Member Listing")
+
+    response = client.get(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    members = response.json()
+
+    assert len(members) == 1
+    assert members[0]["user_id"] == workspace["owner_id"]
+    assert members[0]["email"] == "list-owner@example.com"
+    assert members[0]["role"] == "owner"
+    assert "hashed_password" not in members[0]
+
+
+def test_owner_can_add_registered_member(client: TestClient):
+    owner_token = register_and_login(client, "add-owner@example.com")
+    register_and_login(client, "new-member@example.com")
+    workspace = create_workspace(client, owner_token, "Adding Members")
+
+    response = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "NEW-MEMBER@example.com"},
+    )
+
+    assert response.status_code == 201
+    member = response.json()
+
+    assert member["email"] == "new-member@example.com"
+    assert member["role"] == "member"
+    assert member["user_id"] != workspace["owner_id"]
+
+    listing = client.get(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+    )
+
+    assert listing.status_code == 200
+    assert len(listing.json()) == 2
+
+
+def test_owner_cannot_add_duplicate_member(client: TestClient):
+    owner_token = register_and_login(client, "duplicate-owner@example.com")
+    register_and_login(client, "duplicate-member@example.com")
+    workspace = create_workspace(client, owner_token, "Duplicate Check")
+
+    url = f"/workspaces/{workspace['id']}/members"
+    headers = auth_headers(owner_token)
+    payload = {"email": "duplicate-member@example.com"}
+
+    first_response = client.post(url, headers=headers, json=payload)
+    second_response = client.post(url, headers=headers, json=payload)
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 409
+
+
+def test_owner_cannot_add_unknown_member(client: TestClient):
+    owner_token = register_and_login(client, "unknown-owner@example.com")
+    workspace = create_workspace(client, owner_token, "Unknown User")
+
+    response = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "unknown@example.com"},
+    )
+
+    assert response.status_code == 409
+
+
+def test_non_owner_cannot_manage_workspace_members(client: TestClient):
+    owner_token = register_and_login(client, "permission-owner@example.com")
+    member_token = register_and_login(client, "permission-member@example.com")
+    workspace = create_workspace(client, owner_token, "Permission Check")
+
+    add_response = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "permission-member@example.com"},
+    )
+    assert add_response.status_code == 201
+
+    forbidden_add = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(member_token),
+        json={"email": "permission-owner@example.com"},
+    )
+
+    forbidden_remove = client.delete(
+        f"/workspaces/{workspace['id']}/members/{add_response.json()['user_id']}",
+        headers=auth_headers(member_token),
+    )
+
+    assert forbidden_add.status_code == 403
+    assert forbidden_remove.status_code == 403
+
+
+def test_owner_can_remove_regular_member(client: TestClient):
+    owner_token = register_and_login(client, "remove-owner@example.com")
+    register_and_login(client, "remove-member@example.com")
+    workspace = create_workspace(client, owner_token, "Remove Member")
+
+    added = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "remove-member@example.com"},
+    )
+    assert added.status_code == 201
+
+    removed = client.delete(
+        f"/workspaces/{workspace['id']}/members/{added.json()['user_id']}",
+        headers=auth_headers(owner_token),
+    )
+
+    assert removed.status_code == 204
+
+    listing = client.get(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+    )
+
+    assert listing.status_code == 200
+    assert len(listing.json()) == 1
+    assert listing.json()[0]["role"] == "owner"
+
+
+def test_workspace_owner_cannot_be_removed(client: TestClient):
+    owner_token = register_and_login(client, "protected-owner@example.com")
+    workspace = create_workspace(client, owner_token, "Protect Owner")
+
+    response = client.delete(
+        f"/workspaces/{workspace['id']}/members/{workspace['owner_id']}",
+        headers=auth_headers(owner_token),
+    )
+
+    assert response.status_code == 409
+
+    listing = client.get(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+    )
+
+    assert listing.status_code == 200
+    assert len(listing.json()) == 1
+    assert listing.json()[0]["role"] == "owner"
+
+
+def test_non_member_cannot_list_workspace_members(client: TestClient):
+    owner_token = register_and_login(client, "private-list-owner@example.com")
+    other_token = register_and_login(client, "private-list-other@example.com")
+    workspace = create_workspace(client, owner_token, "Private Member List")
+
+    response = client.get(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(other_token),
+    )
+
+    assert response.status_code == 404

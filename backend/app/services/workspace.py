@@ -1,9 +1,10 @@
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import User, Workspace, WorkspaceMembership
-from app.schemas.workspace import WorkspaceCreate
+from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate
 
 
 def create_workspace(
@@ -179,6 +180,56 @@ def remove_workspace_member(
 
     try:
         db.delete(membership)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return True
+
+
+def update_workspace(
+    db: Session,
+    workspace_id: int,
+    workspace_data: WorkspaceUpdate,
+) -> Workspace | None:
+    workspace = db.get(Workspace, workspace_id)
+
+    if workspace is None:
+        return None
+
+    updates = workspace_data.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise ValueError("Provide at least one field to update.")
+
+    if "name" in updates and updates["name"] is None:
+        raise ValueError("Workspace name cannot be null.")
+
+    try:
+        for field, value in updates.items():
+            setattr(workspace, field, value)
+
+        db.commit()
+        db.refresh(workspace)
+    except Exception:
+        db.rollback()
+        raise
+
+    return workspace
+
+
+def delete_workspace(
+    db: Session,
+    workspace_id: int,
+) -> bool:
+    workspace = db.get(Workspace, workspace_id)
+
+    if workspace is None:
+        return False
+
+    try:
+        db.delete(workspace)
         db.commit()
     except Exception:
         db.rollback()

@@ -1,7 +1,6 @@
-
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class WorkspaceCreate(BaseModel):
@@ -48,3 +47,20 @@ class WorkspaceMembershipResponse(BaseModel):
 
 class WorkspaceDetailResponse(WorkspaceResponse):
     role: str
+
+
+class WorkspaceMemberResponse(BaseModel):
+    user_id: int
+    full_name: str
+    email: EmailStr
+    role: str
+    joined_at: datetime
+
+
+class WorkspaceMemberCreate(BaseModel):
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> str:
+        return str(value).strip().lower()

@@ -52,8 +52,14 @@ def list_workspaces_endpoint(
     workspaces = list_user_workspaces(db, current_user)
 
     return [
-        WorkspaceDetailResponse.model_validate(workspace).model_copy(
-            update={"role": role}
+        WorkspaceDetailResponse(
+            id=workspace.id,
+            name=workspace.name,
+            description=workspace.description,
+            owner_id=workspace.owner_id,
+            created_at=workspace.created_at,
+            updated_at=workspace.updated_at,
+            role=role,
         )
         for workspace, role in workspaces
     ]
@@ -75,6 +81,12 @@ def get_workspace_endpoint(
 
     workspace, role = result
 
-    return WorkspaceDetailResponse.model_validate(workspace).model_copy(
-        update={"role": role}
+    return WorkspaceDetailResponse(
+        id=workspace.id,
+        name=workspace.name,
+        description=workspace.description,
+        owner_id=workspace.owner_id,
+        created_at=workspace.created_at,
+        updated_at=workspace.updated_at,
+        role=role,
     )

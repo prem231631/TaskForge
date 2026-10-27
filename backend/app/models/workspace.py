@@ -57,6 +57,11 @@ class Workspace(Base):
         cascade="all, delete-orphan",
     )
 
+    tasks: Mapped[list["Task"]] = relationship(
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+    )
+
 
 class WorkspaceMembership(Base):
     __tablename__ = "workspace_memberships"

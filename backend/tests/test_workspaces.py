@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
-from app.models import WorkspaceMembership
+from app.models import Workspace, WorkspaceMembership
 
 
 test_engine = create_engine(
@@ -373,3 +373,176 @@ def test_non_member_cannot_list_workspace_members(client: TestClient):
     )
 
     assert response.status_code == 404
+
+
+def test_owner_can_update_workspace_name_and_description(client: TestClient):
+    token = register_and_login(client, "update-owner@example.com")
+    workspace = create_workspace(client, token, "Original Workspace")
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(token),
+        json={
+            "name": "Updated Workspace",
+            "description": "Updated workspace description.",
+        },
+    )
+
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["name"] == "Updated Workspace"
+    assert updated["description"] == "Updated workspace description."
+    assert updated["id"] == workspace["id"]
+
+
+def test_owner_can_clear_workspace_description(client: TestClient):
+    token = register_and_login(client, "clear-description-owner@example.com")
+    workspace_response = client.post(
+        "/workspaces",
+        headers=auth_headers(token),
+        json={
+            "name": "Description Workspace",
+            "description": "This description will be cleared.",
+        },
+    )
+    assert workspace_response.status_code == 201
+    workspace = workspace_response.json()
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(token),
+        json={"description": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["description"] is None
+
+
+def test_empty_workspace_update_is_rejected(client: TestClient):
+    token = register_and_login(client, "empty-update-owner@example.com")
+    workspace = create_workspace(client, token, "Empty Update")
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(token),
+        json={},
+    )
+
+    assert response.status_code == 422
+    assert "at least one field" in response.json()["detail"].lower()
+
+
+def test_workspace_name_cannot_be_set_to_null(client: TestClient):
+    token = register_and_login(client, "null-name-owner@example.com")
+    workspace = create_workspace(client, token, "Keep This Name")
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(token),
+        json={"name": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_non_owner_cannot_update_workspace(client: TestClient):
+    owner_token = register_and_login(client, "update-permission-owner@example.com")
+    member_token = register_and_login(client, "update-permission-member@example.com")
+    workspace = create_workspace(client, owner_token, "Protected Workspace")
+
+    added = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "update-permission-member@example.com"},
+    )
+    assert added.status_code == 201
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(member_token),
+        json={"name": "Unauthorized Rename"},
+    )
+
+    assert response.status_code == 403
+
+    detail = client.get(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(owner_token),
+    )
+    assert detail.status_code == 200
+    assert detail.json()["name"] == "Protected Workspace"
+
+
+def test_owner_can_delete_workspace_and_memberships(client: TestClient):
+    owner_token = register_and_login(client, "delete-owner@example.com")
+    register_and_login(client, "delete-member@example.com")
+    workspace = create_workspace(client, owner_token, "Workspace To Delete")
+
+    added = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "delete-member@example.com"},
+    )
+    assert added.status_code == 201
+
+    workspace_id = workspace["id"]
+
+    response = client.delete(
+        f"/workspaces/{workspace_id}",
+        headers=auth_headers(owner_token),
+    )
+
+    assert response.status_code == 204
+
+    with TestingSessionLocal() as db:
+        assert db.get(Workspace, workspace_id) is None
+        memberships = db.scalars(
+            select(WorkspaceMembership).where(
+                WorkspaceMembership.workspace_id == workspace_id
+            )
+        ).all()
+        assert memberships == []
+
+
+def test_non_owner_cannot_delete_workspace(client: TestClient):
+    owner_token = register_and_login(client, "delete-permission-owner@example.com")
+    member_token = register_and_login(client, "delete-permission-member@example.com")
+    workspace = create_workspace(client, owner_token, "Protected From Deletion")
+
+    added = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": "delete-permission-member@example.com"},
+    )
+    assert added.status_code == 201
+
+    response = client.delete(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(member_token),
+    )
+
+    assert response.status_code == 403
+
+    detail = client.get(
+        f"/workspaces/{workspace['id']}",
+        headers=auth_headers(owner_token),
+    )
+    assert detail.status_code == 200
+    assert detail.json()["name"] == "Protected From Deletion"
+
+
+def test_nonexistent_workspace_cannot_be_updated_or_deleted(client: TestClient):
+    token = register_and_login(client, "missing-workspace-owner@example.com")
+
+    update_response = client.patch(
+        "/workspaces/9999",
+        headers=auth_headers(token),
+        json={"name": "Missing Workspace"},
+    )
+    delete_response = client.delete(
+        "/workspaces/9999",
+        headers=auth_headers(token),
+    )
+
+    assert update_response.status_code == 404
+    assert delete_response.status_code == 404

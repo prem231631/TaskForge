@@ -1,3 +1,4 @@
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,14 +14,17 @@ from app.schemas.workspace import (
     WorkspaceMemberCreate,
     WorkspaceMemberResponse,
     WorkspaceResponse,
+    WorkspaceUpdate,
 )
 from app.services.workspace import (
     add_workspace_member,
     create_workspace,
+    delete_workspace,
     get_user_workspace,
     list_user_workspaces,
     list_workspace_members,
     remove_workspace_member,
+    update_workspace,
 )
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -46,7 +50,7 @@ def require_workspace_owner(
     if role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the workspace owner can manage members.",
+            detail="Only the workspace owner can manage this workspace.",
         )
 
 
@@ -116,6 +120,68 @@ def get_workspace_endpoint(
         updated_at=workspace.updated_at,
         role=role,
     )
+
+
+@router.patch(
+    "/{workspace_id}",
+    response_model=WorkspaceResponse,
+)
+def update_workspace_endpoint(
+    workspace_id: int,
+    payload: WorkspaceUpdate,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> Workspace:
+    require_workspace_owner(db, workspace_id, current_user)
+
+    try:
+        workspace = update_workspace(db, workspace_id, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to update workspace.",
+        ) from exc
+
+    if workspace is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
+
+    return workspace
+
+
+@router.delete(
+    "/{workspace_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_workspace_endpoint(
+    workspace_id: int,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> None:
+    require_workspace_owner(db, workspace_id, current_user)
+
+    try:
+        deleted = delete_workspace(db, workspace_id)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to delete workspace.",
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
 
 
 @router.get(

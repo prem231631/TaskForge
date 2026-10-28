@@ -1,4 +1,6 @@
 
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -73,6 +75,15 @@ def auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def get_user_id(client: TestClient, token: str) -> int:
+    response = client.get(
+        "/auth/me",
+        headers=auth_headers(token),
+    )
+    assert response.status_code == 200
+    return response.json()["id"]
+
+
 def create_workspace(
     client: TestClient,
     token: str,
@@ -110,8 +121,27 @@ def create_task(
     )
 
 
+def add_workspace_member(
+    client: TestClient,
+    owner_token: str,
+    workspace_id: int,
+    member_id: int,
+):
+    return client.post(
+        f"/workspaces/{workspace_id}/members",
+        headers=auth_headers(owner_token),
+        json={
+            "user_id": member_id,
+            "role": "member",
+        },
+    )
+
+
 def test_create_task_with_defaults(client: TestClient):
-    token = register_and_login(client, "task-create@example.com")
+    token = register_and_login(
+        client,
+        "task-create@example.com",
+    )
     workspace = create_workspace(client, token)
 
     response = create_task(
@@ -131,13 +161,17 @@ def test_create_task_with_defaults(client: TestClient):
     assert task["status"] == "todo"
     assert task["priority"] == "medium"
     assert task["assigned_to_id"] is None
+    assert task["due_date"] is None
     assert "id" in task
     assert "created_at" in task
     assert "updated_at" in task
 
 
 def test_create_task_rejects_blank_title(client: TestClient):
-    token = register_and_login(client, "blank-task-title@example.com")
+    token = register_and_login(
+        client,
+        "blank-task-title@example.com",
+    )
     workspace = create_workspace(client, token)
 
     response = create_task(
@@ -177,8 +211,40 @@ def test_create_task_rejects_invalid_options(
     assert response.status_code == 422
 
 
+def test_create_task_with_due_date(client: TestClient):
+    token = register_and_login(
+        client,
+        "task-due-date-create@example.com",
+    )
+    workspace = create_workspace(client, token)
+    due_date = "2027-06-15T12:00:00Z"
+
+    response = create_task(
+        client,
+        token,
+        workspace["id"],
+        {
+            "title": "Task with deadline",
+            "due_date": due_date,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["due_date"] is not None
+
+    parsed_due_date = datetime.fromisoformat(
+        response.json()["due_date"].replace("Z", "+00:00")
+    )
+    assert parsed_due_date == datetime(
+        2027, 6, 15, 12, 0, tzinfo=timezone.utc
+    )
+
+
 def test_member_can_list_and_get_tasks(client: TestClient):
-    token = register_and_login(client, "task-list@example.com")
+    token = register_and_login(
+        client,
+        "task-list@example.com",
+    )
     workspace = create_workspace(client, token)
 
     first = create_task(
@@ -226,7 +292,10 @@ def test_member_can_list_and_get_tasks(client: TestClient):
 
 
 def test_member_can_update_task(client: TestClient):
-    token = register_and_login(client, "task-update@example.com")
+    token = register_and_login(
+        client,
+        "task-update@example.com",
+    )
     workspace = create_workspace(client, token)
 
     created = create_task(
@@ -259,8 +328,44 @@ def test_member_can_update_task(client: TestClient):
     assert updated["description"] == "Updated task description."
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"status": "blocked"},
+        {"priority": "urgent"},
+        {"title": "   "},
+        {"title": None},
+        {"status": None},
+        {"priority": None},
+    ],
+)
+def test_task_update_rejects_invalid_values(
+    client: TestClient,
+    payload: dict,
+):
+    token = register_and_login(
+        client,
+        f"invalid-update-{len(payload)}-{str(payload)[:12].replace(' ', '')}@example.com",
+    )
+    workspace = create_workspace(client, token)
+    created = create_task(client, token, workspace["id"])
+
+    assert created.status_code == 201
+
+    response = client.patch(
+        f"/workspaces/{workspace['id']}/tasks/{created.json()['id']}",
+        headers=auth_headers(token),
+        json=payload,
+    )
+
+    assert response.status_code == 422
+
+
 def test_empty_task_update_is_rejected(client: TestClient):
-    token = register_and_login(client, "empty-task-update@example.com")
+    token = register_and_login(
+        client,
+        "empty-task-update@example.com",
+    )
     workspace = create_workspace(client, token)
 
     created = create_task(client, token, workspace["id"])
@@ -275,8 +380,81 @@ def test_empty_task_update_is_rejected(client: TestClient):
     assert response.status_code == 422
 
 
+def test_task_due_date_can_be_updated_and_cleared(
+    client: TestClient,
+):
+    token = register_and_login(
+        client,
+        "task-due-date-update@example.com",
+    )
+    workspace = create_workspace(client, token)
+    created = create_task(client, token, workspace["id"])
+
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+    task_url = f"/workspaces/{workspace['id']}/tasks/{task_id}"
+    headers = auth_headers(token)
+
+    updated = client.patch(
+        task_url,
+        headers=headers,
+        json={"due_date": "2027-08-20T09:30:00Z"},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["due_date"] is not None
+
+    cleared = client.patch(
+        task_url,
+        headers=headers,
+        json={"due_date": None},
+    )
+
+    assert cleared.status_code == 200
+    assert cleared.json()["due_date"] is None
+
+
+def test_workspace_member_can_be_assigned_task(
+    client: TestClient,
+):
+    owner_token = register_and_login(
+        client,
+        "task-assignment-owner-valid@example.com",
+    )
+    member_token = register_and_login(
+        client,
+        "task-assignment-member-valid@example.com",
+    )
+    workspace = create_workspace(client, owner_token)
+    member_id = get_user_id(client, member_token)
+
+    membership = add_workspace_member(
+        client,
+        owner_token,
+        workspace["id"],
+        member_id,
+    )
+    assert membership.status_code in (200, 201)
+
+    response = create_task(
+        client,
+        owner_token,
+        workspace["id"],
+        {
+            "title": "Assigned task",
+            "assigned_to_id": member_id,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assigned_to_id"] == member_id
+
+
 def test_member_can_delete_task(client: TestClient):
-    token = register_and_login(client, "task-delete@example.com")
+    token = register_and_login(
+        client,
+        "task-delete@example.com",
+    )
     workspace = create_workspace(client, token)
 
     created = create_task(client, token, workspace["id"])
@@ -299,7 +477,33 @@ def test_member_can_delete_task(client: TestClient):
     assert detail.status_code == 404
 
 
-def test_non_member_cannot_access_workspace_tasks(client: TestClient):
+def test_nonexistent_task_returns_404_for_detail_update_and_delete(
+    client: TestClient,
+):
+    token = register_and_login(
+        client,
+        "task-nonexistent@example.com",
+    )
+    workspace = create_workspace(client, token)
+    task_url = f"/workspaces/{workspace['id']}/tasks/99999"
+    headers = auth_headers(token)
+
+    detail = client.get(task_url, headers=headers)
+    update = client.patch(
+        task_url,
+        headers=headers,
+        json={"title": "Updated title"},
+    )
+    delete = client.delete(task_url, headers=headers)
+
+    assert detail.status_code == 404
+    assert update.status_code == 404
+    assert delete.status_code == 404
+
+
+def test_non_member_cannot_access_workspace_tasks(
+    client: TestClient,
+):
     owner_token = register_and_login(
         client,
         "task-access-owner@example.com",
@@ -340,7 +544,9 @@ def test_non_member_cannot_access_workspace_tasks(client: TestClient):
     assert creation.status_code == 404
 
 
-def test_task_endpoints_require_authentication(client: TestClient):
+def test_task_endpoints_require_authentication(
+    client: TestClient,
+):
     response_create = client.post(
         "/workspaces/1/tasks",
         json={"title": "Unauthenticated task"},
@@ -360,7 +566,9 @@ def test_task_endpoints_require_authentication(client: TestClient):
     assert response_delete.status_code == 401
 
 
-def test_task_must_belong_to_requested_workspace(client: TestClient):
+def test_task_must_belong_to_requested_workspace(
+    client: TestClient,
+):
     token = register_and_login(
         client,
         "task-workspace-boundary@example.com",
@@ -417,12 +625,7 @@ def test_task_assignment_requires_workspace_membership(
         "task-assignment-other@example.com",
     )
     workspace = create_workspace(client, owner_token)
-
-    other_profile = client.get(
-        "/auth/me",
-        headers=auth_headers(other_token),
-    )
-    assert other_profile.status_code == 200
+    other_user_id = get_user_id(client, other_token)
 
     response = create_task(
         client,
@@ -430,7 +633,7 @@ def test_task_assignment_requires_workspace_membership(
         workspace["id"],
         {
             "title": "Assign to non-member",
-            "assigned_to_id": other_profile.json()["id"],
+            "assigned_to_id": other_user_id,
         },
     )
 

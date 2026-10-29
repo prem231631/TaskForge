@@ -121,27 +121,8 @@ def create_task(
     )
 
 
-def add_workspace_member(
-    client: TestClient,
-    owner_token: str,
-    workspace_id: int,
-    member_id: int,
-):
-    return client.post(
-        f"/workspaces/{workspace_id}/members",
-        headers=auth_headers(owner_token),
-        json={
-            "user_id": member_id,
-            "role": "member",
-        },
-    )
-
-
 def test_create_task_with_defaults(client: TestClient):
-    token = register_and_login(
-        client,
-        "task-create@example.com",
-    )
+    token = register_and_login(client, "task-create@example.com")
     workspace = create_workspace(client, token)
 
     response = create_task(
@@ -168,10 +149,7 @@ def test_create_task_with_defaults(client: TestClient):
 
 
 def test_create_task_rejects_blank_title(client: TestClient):
-    token = register_and_login(
-        client,
-        "blank-task-title@example.com",
-    )
+    token = register_and_login(client, "blank-task-title@example.com")
     workspace = create_workspace(client, token)
 
     response = create_task(
@@ -230,21 +208,25 @@ def test_create_task_with_due_date(client: TestClient):
     )
 
     assert response.status_code == 201
-    assert response.json()["due_date"] is not None
+
+    returned_due_date = response.json()["due_date"]
+    assert returned_due_date is not None
 
     parsed_due_date = datetime.fromisoformat(
-        response.json()["due_date"].replace("Z", "+00:00")
+        returned_due_date.replace("Z", "+00:00")
     )
+
+    # SQLite may return a timezone-naive datetime for this column.
+    if parsed_due_date.tzinfo is None:
+        parsed_due_date = parsed_due_date.replace(tzinfo=timezone.utc)
+
     assert parsed_due_date == datetime(
         2027, 6, 15, 12, 0, tzinfo=timezone.utc
     )
 
 
 def test_member_can_list_and_get_tasks(client: TestClient):
-    token = register_and_login(
-        client,
-        "task-list@example.com",
-    )
+    token = register_and_login(client, "task-list@example.com")
     workspace = create_workspace(client, token)
 
     first = create_task(
@@ -292,17 +274,10 @@ def test_member_can_list_and_get_tasks(client: TestClient):
 
 
 def test_member_can_update_task(client: TestClient):
-    token = register_and_login(
-        client,
-        "task-update@example.com",
-    )
+    token = register_and_login(client, "task-update@example.com")
     workspace = create_workspace(client, token)
 
-    created = create_task(
-        client,
-        token,
-        workspace["id"],
-    )
+    created = create_task(client, token, workspace["id"])
     assert created.status_code == 201
 
     task_id = created.json()["id"]
@@ -343,9 +318,10 @@ def test_task_update_rejects_invalid_values(
     client: TestClient,
     payload: dict,
 ):
+    # Each test fixture gets a fresh database, so this address is reusable.
     token = register_and_login(
         client,
-        f"invalid-update-{len(payload)}-{str(payload)[:12].replace(' ', '')}@example.com",
+        "invalid-update@example.com",
     )
     workspace = create_workspace(client, token)
     created = create_task(client, token, workspace["id"])
@@ -362,13 +338,10 @@ def test_task_update_rejects_invalid_values(
 
 
 def test_empty_task_update_is_rejected(client: TestClient):
-    token = register_and_login(
-        client,
-        "empty-task-update@example.com",
-    )
+    token = register_and_login(client, "empty-task-update@example.com")
     workspace = create_workspace(client, token)
-
     created = create_task(client, token, workspace["id"])
+
     assert created.status_code == 201
 
     response = client.patch(
@@ -391,6 +364,7 @@ def test_task_due_date_can_be_updated_and_cleared(
     created = create_task(client, token, workspace["id"])
 
     assert created.status_code == 201
+
     task_id = created.json()["id"]
     task_url = f"/workspaces/{workspace['id']}/tasks/{task_id}"
     headers = auth_headers(token)
@@ -421,20 +395,25 @@ def test_workspace_member_can_be_assigned_task(
         client,
         "task-assignment-owner-valid@example.com",
     )
+    member_email = "task-assignment-member-valid@example.com"
+
+    register_and_login(client, member_email)
     member_token = register_and_login(
         client,
-        "task-assignment-member-valid@example.com",
+        "task-assignment-member-login@example.com",
     )
-    workspace = create_workspace(client, owner_token)
-    member_id = get_user_id(client, member_token)
 
-    membership = add_workspace_member(
-        client,
-        owner_token,
-        workspace["id"],
-        member_id,
+    # Add the registered member by the email expected by the workspace API.
+    workspace = create_workspace(client, owner_token)
+
+    membership = client.post(
+        f"/workspaces/{workspace['id']}/members",
+        headers=auth_headers(owner_token),
+        json={"email": member_email},
     )
-    assert membership.status_code in (200, 201)
+
+    assert membership.status_code == 201
+    member_id = membership.json()["user_id"]
 
     response = create_task(
         client,
@@ -451,15 +430,11 @@ def test_workspace_member_can_be_assigned_task(
 
 
 def test_member_can_delete_task(client: TestClient):
-    token = register_and_login(
-        client,
-        "task-delete@example.com",
-    )
+    token = register_and_login(client, "task-delete@example.com")
     workspace = create_workspace(client, token)
-
     created = create_task(client, token, workspace["id"])
-    assert created.status_code == 201
 
+    assert created.status_code == 201
     task_id = created.json()["id"]
 
     response = client.delete(
@@ -514,11 +489,7 @@ def test_non_member_cannot_access_workspace_tasks(
     )
     workspace = create_workspace(client, owner_token)
 
-    created = create_task(
-        client,
-        owner_token,
-        workspace["id"],
-    )
+    created = create_task(client, owner_token, workspace["id"])
     assert created.status_code == 201
 
     headers = auth_headers(other_token)
@@ -583,11 +554,7 @@ def test_task_must_belong_to_requested_workspace(
     assert second_workspace_response.status_code == 201
     second_workspace = second_workspace_response.json()
 
-    created = create_task(
-        client,
-        token,
-        first_workspace["id"],
-    )
+    created = create_task(client, token, first_workspace["id"])
     assert created.status_code == 201
 
     task_id = created.json()["id"]
@@ -596,13 +563,11 @@ def test_task_must_belong_to_requested_workspace(
         f"/workspaces/{second_workspace['id']}/tasks/{task_id}",
         headers=auth_headers(token),
     )
-
     update = client.patch(
         f"/workspaces/{second_workspace['id']}/tasks/{task_id}",
         headers=auth_headers(token),
         json={"title": "Should not update"},
     )
-
     delete = client.delete(
         f"/workspaces/{second_workspace['id']}/tasks/{task_id}",
         headers=auth_headers(token),

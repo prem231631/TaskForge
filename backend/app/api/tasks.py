@@ -1,7 +1,7 @@
 
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -29,7 +29,7 @@ DbSession = Annotated[Session, Depends(get_db)]
 def require_workspace_membership(
     db: Session,
     workspace_id: int,
-    current_user,
+    current_user: CurrentUser,
 ) -> None:
     result = get_user_workspace(db, workspace_id, current_user)
 
@@ -76,9 +76,35 @@ def list_tasks_endpoint(
     workspace_id: int,
     db: DbSession,
     current_user: CurrentUser,
+    status_filter: Annotated[
+        Literal["todo", "in_progress", "done"] | None,
+        Query(alias="status"),
+    ] = None,
+    priority_filter: Annotated[
+        Literal["low", "medium", "high"] | None,
+        Query(alias="priority"),
+    ] = None,
+    assigned_to_id: Annotated[int | None, Query(gt=0)] = None,
+    sort_by: Annotated[
+        Literal["created_at", "due_date", "title", "priority"],
+        Query(),
+    ] = "created_at",
+    sort_order: Annotated[
+        Literal["asc", "desc"],
+        Query(),
+    ] = "desc",
 ) -> list[Task]:
     require_workspace_membership(db, workspace_id, current_user)
-    return list_workspace_tasks(db, workspace_id)
+
+    return list_workspace_tasks(
+        db,
+        workspace_id,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        assigned_to_id=assigned_to_id,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
 
 @router.get(

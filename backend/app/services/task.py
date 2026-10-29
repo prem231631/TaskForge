@@ -1,5 +1,5 @@
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.models import Task, User, Workspace, WorkspaceMembership
@@ -29,7 +29,9 @@ def _validate_assignee(
         raise ValueError("The assigned user does not have an active account.")
 
     if not _is_workspace_member(db, workspace_id, assigned_to_id):
-        raise ValueError("The assigned user must be a member of this workspace.")
+        raise ValueError(
+            "The assigned user must be a member of this workspace."
+        )
 
 
 def create_task(
@@ -78,11 +80,42 @@ def create_task(
 def list_workspace_tasks(
     db: Session,
     workspace_id: int,
+    *,
+    status_filter: str | None = None,
+    priority_filter: str | None = None,
+    assigned_to_id: int | None = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
 ) -> list[Task]:
-    statement = (
-        select(Task)
-        .where(Task.workspace_id == workspace_id)
-        .order_by(Task.created_at.desc(), Task.id.desc())
+    statement = select(Task).where(Task.workspace_id == workspace_id)
+
+    if status_filter is not None:
+        statement = statement.where(Task.status == status_filter)
+
+    if priority_filter is not None:
+        statement = statement.where(Task.priority == priority_filter)
+
+    if assigned_to_id is not None:
+        statement = statement.where(Task.assigned_to_id == assigned_to_id)
+
+    sort_columns = {
+        "created_at": Task.created_at,
+        "due_date": Task.due_date,
+        "title": Task.title,
+        "priority": case(
+            (Task.priority == "high", 3),
+            (Task.priority == "medium", 2),
+            (Task.priority == "low", 1),
+            else_=0,
+        ),
+    }
+
+    sort_column = sort_columns[sort_by]
+    ordering = sort_column.desc() if sort_order == "desc" else sort_column.asc()
+
+    statement = statement.order_by(
+        ordering,
+        Task.id.desc(),
     )
 
     return list(db.scalars(statement).all())
@@ -97,7 +130,6 @@ def get_workspace_task(
         Task.id == task_id,
         Task.workspace_id == workspace_id,
     )
-
     return db.scalar(statement)
 
 

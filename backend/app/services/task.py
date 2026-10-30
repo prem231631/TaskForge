@@ -86,6 +86,8 @@ def list_workspace_tasks(
     assigned_to_id: int | None = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
+    limit: int = 50,
+    offset: int = 0,
 ) -> list[Task]:
     statement = select(Task).where(Task.workspace_id == workspace_id)
 
@@ -113,9 +115,11 @@ def list_workspace_tasks(
     sort_column = sort_columns[sort_by]
     ordering = sort_column.desc() if sort_order == "desc" else sort_column.asc()
 
-    statement = statement.order_by(
-        ordering,
-        Task.id.desc(),
+    statement = (
+        statement
+        .order_by(ordering, Task.id.desc())
+        .offset(offset)
+        .limit(limit)
     )
 
     return list(db.scalars(statement).all())

@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from app.api.auth import CurrentUser
 from app.db.dependencies import get_db
 from app.models import Task
-from app.schemas.task import TaskCreate, TaskResponse, TaskUpdate
+from app.schemas.task import (
+    TaskCreate,
+    TaskListResponse,
+    TaskResponse,
+    TaskUpdate,
+)
 from app.services.task import (
     create_task,
     delete_task,
@@ -70,7 +75,7 @@ def create_task_endpoint(
 
 @router.get(
     "",
-    response_model=list[TaskResponse],
+    response_model=TaskListResponse,
 )
 def list_tasks_endpoint(
     workspace_id: int,
@@ -95,10 +100,10 @@ def list_tasks_endpoint(
     ] = "desc",
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> list[Task]:
+) -> TaskListResponse:
     require_workspace_membership(db, workspace_id, current_user)
 
-    return list_workspace_tasks(
+    items, total = list_workspace_tasks(
         db,
         workspace_id,
         status_filter=status_filter,
@@ -108,6 +113,14 @@ def list_tasks_endpoint(
         sort_order=sort_order,
         limit=limit,
         offset=offset,
+    )
+
+    return TaskListResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=offset + len(items) < total,
     )
 
 

@@ -25,6 +25,20 @@ DbSession = Annotated[Session, Depends(get_db)]
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Register a new account",
+    description="""
+Create a new TaskForge user account.
+
+**Requirements:**
+- Full name must contain 2–120 characters.
+- Email must be a valid email address.
+- Password must contain 8–128 characters.
+
+A successful registration returns the newly created user profile.
+""",
+    responses={
+        409: {"description": "An account with this email already exists."},
+    },
 )
 def register(payload: UserCreate, db: DbSession) -> User:
     try:
@@ -36,7 +50,24 @@ def register(payload: UserCreate, db: DbSession) -> User:
         ) from exc
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Log in to TaskForge",
+    description="""
+Authenticate an existing user using their email and password.
+
+A successful login returns a bearer access token.
+
+Use the returned `access_token` with Swagger UI's **Authorize** button
+to access protected endpoints.
+""",
+    responses={
+        401: {
+            "description": "Invalid credentials or inactive account.",
+        },
+    },
+)
 def login(payload: UserLogin, db: DbSession) -> TokenResponse:
     user = authenticate_user(db, str(payload.email), payload.password)
 
@@ -82,6 +113,20 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get the current user",
+    description="""
+Retrieve the profile of the currently authenticated user.
+
+Requires a valid bearer access token.
+""",
+    responses={
+        401: {
+            "description": "Missing, invalid, or expired authentication token.",
+        },
+    },
+)
 def read_current_user(current_user: CurrentUser) -> User:
     return current_user

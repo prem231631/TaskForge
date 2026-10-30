@@ -139,7 +139,15 @@ def test_default_pagination_returns_all_small_result_set(
     response = list_tasks(client, token, workspace["id"])
 
     assert response.status_code == 200
-    assert len(response.json()) == 5
+
+    result = response.json()
+    tasks = result["items"]
+
+    assert len(tasks) == 5
+    assert result["total"] == 5
+    assert result["limit"] == 50
+    assert result["offset"] == 0
+    assert result["has_more"] is False
 
 
 def test_limit_restricts_number_of_returned_tasks(
@@ -161,7 +169,15 @@ def test_limit_restricts_number_of_returned_tasks(
     )
 
     assert response.status_code == 200
-    assert len(response.json()) == 2
+
+    result = response.json()
+    tasks = result["items"]
+
+    assert len(tasks) == 2
+    assert result["total"] == 5
+    assert result["limit"] == 2
+    assert result["offset"] == 0
+    assert result["has_more"] is True
 
 
 def test_offset_skips_requested_number_of_tasks(
@@ -188,8 +204,16 @@ def test_offset_skips_requested_number_of_tasks(
 
     assert response.status_code == 200
 
-    titles = [task["title"] for task in response.json()]
+    result = response.json()
+    tasks = result["items"]
+
+    titles = [task["title"] for task in tasks]
+
     assert titles == ["Task 03", "Task 04", "Task 05"]
+    assert result["total"] == 5
+    assert result["limit"] == 50
+    assert result["offset"] == 2
+    assert result["has_more"] is False
 
 
 def test_limit_and_offset_return_expected_page(
@@ -217,8 +241,16 @@ def test_limit_and_offset_return_expected_page(
 
     assert response.status_code == 200
 
-    titles = [task["title"] for task in response.json()]
+    result = response.json()
+    tasks = result["items"]
+
+    titles = [task["title"] for task in tasks]
+
     assert titles == ["Task 03", "Task 04"]
+    assert result["total"] == 6
+    assert result["limit"] == 2
+    assert result["offset"] == 2
+    assert result["has_more"] is True
 
 
 def test_offset_beyond_available_tasks_returns_empty_list(
@@ -240,7 +272,14 @@ def test_offset_beyond_available_tasks_returns_empty_list(
     )
 
     assert response.status_code == 200
-    assert response.json() == []
+
+    result = response.json()
+
+    assert result["items"] == []
+    assert result["total"] == 3
+    assert result["limit"] == 50
+    assert result["offset"] == 10
+    assert result["has_more"] is False
 
 
 def test_pagination_works_with_filters_and_sorting(
@@ -301,9 +340,15 @@ def test_pagination_works_with_filters_and_sorting(
 
     assert response.status_code == 200
 
-    tasks = response.json()
+    result = response.json()
+    tasks = result["items"]
+
     assert len(tasks) == 1
     assert tasks[0]["title"] == "Charlie task"
+    assert result["total"] == 2
+    assert result["limit"] == 1
+    assert result["offset"] == 1
+    assert result["has_more"] is False
 
 
 @pytest.mark.parametrize(

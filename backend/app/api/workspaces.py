@@ -58,6 +58,22 @@ def require_workspace_owner(
     "",
     response_model=WorkspaceResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Create a workspace",
+    description="""
+Create a new workspace for the authenticated user.
+
+The authenticated user becomes the workspace owner.
+
+**Requirements:**
+- Workspace name must contain 2–120 characters.
+- Description is optional and supports up to 500 characters.
+
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        422: {"description": "Invalid workspace data."},
+        500: {"description": "Unable to create workspace."},
+    },
 )
 def create_workspace_endpoint(
     payload: WorkspaceCreate,
@@ -74,7 +90,19 @@ def create_workspace_endpoint(
         ) from exc
 
 
-@router.get("", response_model=list[WorkspaceDetailResponse])
+@router.get(
+    "",
+    response_model=list[WorkspaceDetailResponse],
+    summary="List my workspaces",
+    description="""
+Retrieve all workspaces where the authenticated user is a member.
+
+Each workspace includes the current user's membership role.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+    },
+)
 def list_workspaces_endpoint(
     db: DbSession,
     current_user: CurrentUser,
@@ -95,7 +123,20 @@ def list_workspaces_endpoint(
     ]
 
 
-@router.get("/{workspace_id}", response_model=WorkspaceDetailResponse)
+@router.get(
+    "/{workspace_id}",
+    response_model=WorkspaceDetailResponse,
+    summary="Get workspace details",
+    description="""
+Retrieve the details of a workspace the authenticated user belongs to.
+
+The response includes the user's membership role.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        404: {"description": "Workspace not found or inaccessible."},
+    },
+)
 def get_workspace_endpoint(
     workspace_id: int,
     db: DbSession,
@@ -125,6 +166,21 @@ def get_workspace_endpoint(
 @router.patch(
     "/{workspace_id}",
     response_model=WorkspaceResponse,
+    summary="Update a workspace",
+    description="""
+Update a workspace's name or description.
+
+**Permission:** Only the workspace owner can update workspace details.
+
+Only the fields supplied in the request are updated.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        403: {"description": "Only the workspace owner can update this workspace."},
+        404: {"description": "Workspace not found."},
+        422: {"description": "Invalid workspace data."},
+        500: {"description": "Unable to update workspace."},
+    },
 )
 def update_workspace_endpoint(
     workspace_id: int,
@@ -160,6 +216,20 @@ def update_workspace_endpoint(
 @router.delete(
     "/{workspace_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a workspace",
+    description="""
+Permanently delete a workspace.
+
+**Permission:** Only the workspace owner can delete the workspace.
+
+A successful deletion returns HTTP 204 with no response body.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        403: {"description": "Only the workspace owner can delete this workspace."},
+        404: {"description": "Workspace not found."},
+        500: {"description": "Unable to delete workspace."},
+    },
 )
 def delete_workspace_endpoint(
     workspace_id: int,
@@ -187,6 +257,16 @@ def delete_workspace_endpoint(
 @router.get(
     "/{workspace_id}/members",
     response_model=list[WorkspaceMemberResponse],
+    summary="List workspace members",
+    description="""
+Retrieve the members of a workspace.
+
+Any authenticated workspace member can view the member list.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        404: {"description": "Workspace not found or inaccessible."},
+    },
 )
 def list_workspace_members_endpoint(
     workspace_id: int,
@@ -219,6 +299,22 @@ def list_workspace_members_endpoint(
     "/{workspace_id}/members",
     response_model=WorkspaceMemberResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Add a workspace member",
+    description="""
+Add an existing TaskForge user to a workspace using their email address.
+
+**Permission:** Only the workspace owner can add members.
+
+The newly added member's information and membership role are returned.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        403: {"description": "Only the workspace owner can add members."},
+        404: {"description": "Workspace not found."},
+        409: {"description": "Unable to add member due to a membership conflict."},
+        422: {"description": "Invalid email address."},
+        500: {"description": "Unable to add workspace member."},
+    },
 )
 def add_workspace_member_endpoint(
     workspace_id: int,
@@ -266,6 +362,21 @@ def add_workspace_member_endpoint(
 @router.delete(
     "/{workspace_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a workspace member",
+    description="""
+Remove a user from a workspace using their user ID.
+
+**Permission:** Only the workspace owner can remove members.
+
+A successful removal returns HTTP 204 with no response body.
+""",
+    responses={
+        401: {"description": "Authentication required."},
+        403: {"description": "Only the workspace owner can remove members."},
+        404: {"description": "Workspace or member not found."},
+        409: {"description": "The membership removal conflicts with workspace rules."},
+        500: {"description": "Unable to remove workspace member."},
+    },
 )
 def remove_workspace_member_endpoint(
     workspace_id: int,

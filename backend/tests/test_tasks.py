@@ -255,8 +255,16 @@ def test_member_can_list_and_get_tasks(client: TestClient):
     )
 
     assert listing.status_code == 200
-    tasks = listing.json()
+
+    result = listing.json()
+    tasks = result["items"]
+
     assert len(tasks) == 2
+    assert result["total"] == 2
+    assert result["limit"] == 50
+    assert result["offset"] == 0
+    assert result["has_more"] is False
+
     assert {task["title"] for task in tasks} == {
         "First task",
         "Second task",

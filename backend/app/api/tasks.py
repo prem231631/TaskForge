@@ -93,6 +93,8 @@ def list_tasks_endpoint(
         Literal["asc", "desc"],
         Query(),
     ] = "desc",
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[Task]:
     require_workspace_membership(db, workspace_id, current_user)
 
@@ -104,6 +106,8 @@ def list_tasks_endpoint(
         assigned_to_id=assigned_to_id,
         sort_by=sort_by,
         sort_order=sort_order,
+        limit=limit,
+        offset=offset,
     )
 
 

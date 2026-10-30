@@ -1,5 +1,5 @@
 
-from sqlalchemy import case, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Task, User, Workspace, WorkspaceMembership
@@ -88,7 +88,7 @@ def list_workspace_tasks(
     sort_order: str = "desc",
     limit: int = 50,
     offset: int = 0,
-) -> list[Task]:
+) -> tuple[list[Task], int]:
     statement = select(Task).where(Task.workspace_id == workspace_id)
 
     if status_filter is not None:
@@ -99,6 +99,12 @@ def list_workspace_tasks(
 
     if assigned_to_id is not None:
         statement = statement.where(Task.assigned_to_id == assigned_to_id)
+
+    total_statement = (
+        select(func.count())
+        .select_from(statement.subquery())
+    )
+    total = db.scalar(total_statement) or 0
 
     sort_columns = {
         "created_at": Task.created_at,
@@ -115,14 +121,16 @@ def list_workspace_tasks(
     sort_column = sort_columns[sort_by]
     ordering = sort_column.desc() if sort_order == "desc" else sort_column.asc()
 
-    statement = (
+    paginated_statement = (
         statement
         .order_by(ordering, Task.id.desc())
         .offset(offset)
         .limit(limit)
     )
 
-    return list(db.scalars(statement).all())
+    items = list(db.scalars(paginated_statement).all())
+
+    return items, total
 
 
 def get_workspace_task(

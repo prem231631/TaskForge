@@ -139,8 +139,11 @@ def test_filter_tasks_by_status(client: TestClient):
     )
 
     assert response.status_code == 200
-    tasks = response.json()
+    result = response.json()
+    tasks = result["items"]
+
     assert len(tasks) == 1
+    assert result["total"] == 1
     assert tasks[0]["title"] == "In progress task"
     assert tasks[0]["status"] == "in_progress"
 
@@ -176,8 +179,11 @@ def test_filter_tasks_by_priority(client: TestClient):
     )
 
     assert response.status_code == 200
-    tasks = response.json()
+    result = response.json()
+    tasks = result["items"]
+
     assert len(tasks) == 1
+    assert result["total"] == 1
     assert tasks[0]["title"] == "High priority task"
     assert tasks[0]["priority"] == "high"
 
@@ -221,8 +227,11 @@ def test_filter_tasks_by_assignee(client: TestClient):
     )
 
     assert response.status_code == 200
-    tasks = response.json()
+    result = response.json()
+    tasks = result["items"]
+
     assert len(tasks) == 1
+    assert result["total"] == 1
     assert tasks[0]["title"] == "Assigned task"
     assert tasks[0]["assigned_to_id"] == member_id
 
@@ -273,8 +282,11 @@ def test_combine_status_and_priority_filters(client: TestClient):
     )
 
     assert response.status_code == 200
-    tasks = response.json()
+    result = response.json()
+    tasks = result["items"]
+
     assert len(tasks) == 1
+    assert result["total"] == 1
     assert tasks[0]["title"] == "Matching task"
 
 
@@ -303,7 +315,11 @@ def test_sort_tasks_by_title_ascending(client: TestClient):
     )
 
     assert response.status_code == 200
-    titles = [task["title"] for task in response.json()]
+    result = response.json()
+    tasks = result["items"]
+
+    assert result["total"] == 2
+    titles = [task["title"] for task in tasks]
     assert titles == ["Alpha task", "Zebra task"]
 
 
@@ -338,7 +354,11 @@ def test_sort_tasks_by_priority_descending(client: TestClient):
     )
 
     assert response.status_code == 200
-    priorities = [task["priority"] for task in response.json()]
+    result = response.json()
+    tasks = result["items"]
+
+    assert result["total"] == 3
+    priorities = [task["priority"] for task in tasks]
     assert priorities == ["high", "medium", "low"]
 
 
@@ -373,9 +393,13 @@ def test_sort_tasks_by_due_date_ascending(client: TestClient):
     )
 
     assert response.status_code == 200
+    result = response.json()
+    tasks = result["items"]
+
+    assert result["total"] == 2
 
     tasks_with_dates = [
-        task for task in response.json()
+        task for task in tasks
         if task["due_date"] is not None
     ]
 

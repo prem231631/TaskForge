@@ -5,9 +5,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.rate_limiter import limiter
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
+
 
 test_engine = create_engine(
     "sqlite://",
@@ -24,6 +26,7 @@ TestingSessionLocal = sessionmaker(
 
 @pytest.fixture
 def client():
+    limiter.reset()
     Base.metadata.create_all(bind=test_engine)
 
     def override_get_db():
@@ -40,6 +43,7 @@ def client():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
+    limiter.reset()
 
 
 def test_register_user(client: TestClient):

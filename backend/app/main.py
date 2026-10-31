@@ -1,9 +1,21 @@
 ﻿
-from fastapi import FastAPI
+import logging
+import time
+
+from fastapi import FastAPI, Request
 
 from app.api.auth import router as auth_router
 from app.api.tasks import router as tasks_router
 from app.api.workspaces import router as workspaces_router
+from app.core.config import get_settings
+from app.core.logging_config import configure_logging
+
+
+settings = get_settings()
+
+configure_logging(debug=settings.debug)
+
+logger = logging.getLogger("taskforge.api")
 
 
 tags_metadata = [
@@ -34,6 +46,7 @@ tags_metadata = [
         ),
     },
 ]
+
 
 app = FastAPI(
     title="TaskForge API",
@@ -77,6 +90,57 @@ Protected endpoints require a valid bearer access token.
     version="0.1.0",
     openapi_tags=tags_metadata,
 )
+
+
+@app.middleware("http")
+async def log_http_requests(
+    request: Request,
+    call_next,
+):
+    """Log HTTP request completion and unexpected failures."""
+
+    start_time = time.perf_counter()
+
+    method = request.method
+    path = request.url.path
+
+    try:
+        response = await call_next(request)
+
+        duration_ms = round(
+            (time.perf_counter() - start_time) * 1000,
+            2,
+        )
+
+        logger.info(
+            "HTTP request completed",
+            extra={
+                "method": method,
+                "path": path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+
+        return response
+
+    except Exception:
+        duration_ms = round(
+            (time.perf_counter() - start_time) * 1000,
+            2,
+        )
+
+        logger.exception(
+            "HTTP request failed",
+            extra={
+                "method": method,
+                "path": path,
+                "duration_ms": duration_ms,
+            },
+        )
+
+        raise
+
 
 app.include_router(auth_router)
 app.include_router(workspaces_router)

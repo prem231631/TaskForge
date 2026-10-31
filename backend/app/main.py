@@ -143,7 +143,7 @@ async def log_http_requests(
     request: Request,
     call_next,
 ):
-    """Log HTTP request completion and unexpected failures."""
+    """Log HTTP requests and apply security response headers."""
 
     start_time = time.perf_counter()
 
@@ -152,6 +152,19 @@ async def log_http_requests(
 
     try:
         response = await call_next(request)
+
+        # Security response headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = (
+            "strict-origin-when-cross-origin"
+        )
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
+
+        # HSTS is intentionally not set here.
+        # Configure it at the HTTPS reverse proxy in production.
 
         duration_ms = round(
             (time.perf_counter() - start_time) * 1000,

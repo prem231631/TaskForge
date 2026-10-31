@@ -1,8 +1,9 @@
 ﻿
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    allowed_origins: list[str] = [
+    allowed_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
@@ -52,7 +53,9 @@ class Settings(BaseSettings):
         ]
 
         if any(not origin for origin in normalized):
-            raise ValueError("Allowed origins cannot contain empty values.")
+            raise ValueError(
+                "Allowed origins cannot contain empty values."
+            )
 
         if "*" in normalized:
             raise ValueError(
@@ -72,7 +75,9 @@ class Settings(BaseSettings):
 
         if environment in {"production", "prod"}:
             if self.debug:
-                raise ValueError("DEBUG must be false in production.")
+                raise ValueError(
+                    "DEBUG must be false in production."
+                )
 
             if (
                 not self.jwt_secret_key

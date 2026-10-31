@@ -17,6 +17,20 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
+        # Include structured fields when available.
+        structured_fields = (
+            "method",
+            "path",
+            "status_code",
+            "duration_ms",
+        )
+
+        for field in structured_fields:
+            value = getattr(record, field, None)
+
+            if value is not None:
+                log_entry[field] = value
+
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
 
@@ -28,7 +42,6 @@ def configure_logging(debug: bool = False) -> None:
 
     root_logger = logging.getLogger()
 
-    # Avoid adding duplicate handlers if configuration runs more than once.
     if getattr(root_logger, "_taskforge_configured", False):
         return
 

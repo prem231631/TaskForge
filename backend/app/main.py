@@ -3,11 +3,18 @@ import logging
 import time
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.auth import router as auth_router
 from app.api.tasks import router as tasks_router
 from app.api.workspaces import router as workspaces_router
 from app.core.config import get_settings
+from app.core.exception_handlers import (
+    http_exception_handler,
+    unexpected_exception_handler,
+    validation_exception_handler,
+)
 from app.core.logging_config import configure_logging
 
 
@@ -89,6 +96,23 @@ Protected endpoints require a valid bearer access token.
 """,
     version="0.1.0",
     openapi_tags=tags_metadata,
+)
+
+
+# Centralized exception handlers
+app.add_exception_handler(
+    StarletteHTTPException,
+    http_exception_handler,
+)
+
+app.add_exception_handler(
+    RequestValidationError,
+    validation_exception_handler,
+)
+
+app.add_exception_handler(
+    Exception,
+    unexpected_exception_handler,
 )
 
 

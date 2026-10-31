@@ -2,16 +2,18 @@
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.rate_limiter import limiter
 from app.core.security import create_access_token, decode_access_token
 from app.db.dependencies import get_db
 from app.models import User
 from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
 from app.services.auth import authenticate_user, get_user_by_email, register_user
+
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()
@@ -38,9 +40,15 @@ A successful registration returns the newly created user profile.
 """,
     responses={
         409: {"description": "An account with this email already exists."},
+        429: {"description": "Registration rate limit exceeded."},
     },
 )
-def register(payload: UserCreate, db: DbSession) -> User:
+@limiter.limit("5/minute")
+def register(
+    request: Request,
+    payload: UserCreate,
+    db: DbSession,
+) -> User:
     try:
         return register_user(db, payload)
     except ValueError as exc:
@@ -66,9 +74,17 @@ to access protected endpoints.
         401: {
             "description": "Invalid credentials or inactive account.",
         },
+        429: {
+            "description": "Login rate limit exceeded.",
+        },
     },
 )
-def login(payload: UserLogin, db: DbSession) -> TokenResponse:
+@limiter.limit("5/minute")
+def login(
+    request: Request,
+    payload: UserLogin,
+    db: DbSession,
+) -> TokenResponse:
     user = authenticate_user(db, str(payload.email), payload.password)
 
     if user is None:

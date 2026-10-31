@@ -1,5 +1,7 @@
-﻿from functools import lru_cache
+﻿
+from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +25,38 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=False,
     )
+
+    @model_validator(mode="after")
+    def validate_security_settings(self):
+        environment = self.app_env.strip().lower()
+
+        if self.access_token_expire_minutes <= 0:
+            raise ValueError(
+                "ACCESS_TOKEN_EXPIRE_MINUTES must be greater than zero."
+            )
+
+        if environment in {"production", "prod"}:
+            if self.debug:
+                raise ValueError(
+                    "DEBUG must be false in production."
+                )
+
+            if (
+                not self.jwt_secret_key
+                or len(self.jwt_secret_key) < 32
+                or "replace_with" in self.jwt_secret_key.lower()
+            ):
+                raise ValueError(
+                    "Production requires a JWT secret of at least "
+                    "32 characters that is not a placeholder."
+                )
+
+            if "replace_with" in self.database_url.lower():
+                raise ValueError(
+                    "Production requires a real DATABASE_URL."
+                )
+
+        return self
 
 
 @lru_cache

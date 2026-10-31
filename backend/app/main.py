@@ -4,6 +4,8 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
@@ -17,6 +19,7 @@ from app.core.exception_handlers import (
     validation_exception_handler,
 )
 from app.core.logging_config import configure_logging
+from app.core.rate_limiter import limiter
 
 
 settings = get_settings()
@@ -100,6 +103,14 @@ Protected endpoints require a valid bearer access token.
 )
 
 
+# Rate limiting configuration
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
+
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -153,7 +164,6 @@ async def log_http_requests(
     try:
         response = await call_next(request)
 
-        # Security response headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = (
@@ -162,9 +172,6 @@ async def log_http_requests(
         response.headers["Permissions-Policy"] = (
             "camera=(), microphone=(), geolocation=()"
         )
-
-        # HSTS is intentionally not set here.
-        # Configure it at the HTTPS reverse proxy in production.
 
         duration_ms = round(
             (time.perf_counter() - start_time) * 1000,

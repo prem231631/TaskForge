@@ -35,6 +35,12 @@ class User(Base):
         nullable=False,
     )
 
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -56,4 +62,12 @@ class User(Base):
     workspace_memberships: Mapped[list["WorkspaceMembership"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+
+    email_verification_token: Mapped[
+        "EmailVerificationToken | None"
+    ] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
     )

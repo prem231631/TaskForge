@@ -20,6 +20,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    email_verification_expire_minutes: int = 30
+
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_sender_email: str = ""
+    smtp_sender_name: str = "TaskForge"
+    smtp_use_tls: bool = True
+
+    frontend_base_url: str = "http://localhost:5173"
+
     allowed_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -73,6 +85,19 @@ class Settings(BaseSettings):
                 "ACCESS_TOKEN_EXPIRE_MINUTES must be greater than zero."
             )
 
+        if self.email_verification_expire_minutes <= 0:
+            raise ValueError(
+                "EMAIL_VERIFICATION_EXPIRE_MINUTES must be greater than zero."
+            )
+
+        if not 1 <= self.smtp_port <= 65535:
+            raise ValueError("SMTP_PORT must be between 1 and 65535.")
+
+        if not self.frontend_base_url.startswith(("http://", "https://")):
+            raise ValueError(
+                "FRONTEND_BASE_URL must be a valid HTTP or HTTPS URL."
+            )
+
         if environment in {"production", "prod"}:
             if self.debug:
                 raise ValueError(
@@ -106,6 +131,23 @@ class Settings(BaseSettings):
             ):
                 raise ValueError(
                     "Production CORS origins cannot contain localhost."
+                )
+
+            if not all(
+                [
+                    self.smtp_host,
+                    self.smtp_username,
+                    self.smtp_password,
+                    self.smtp_sender_email,
+                ]
+            ):
+                raise ValueError(
+                    "Production requires complete SMTP configuration."
+                )
+
+            if not self.frontend_base_url.startswith("https://"):
+                raise ValueError(
+                    "Production FRONTEND_BASE_URL must use HTTPS."
                 )
 
         return self

@@ -1,4 +1,6 @@
 
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -31,6 +33,7 @@ def create_access_token(
 ) -> str:
     """Create a signed JWT access token."""
     now = datetime.now(timezone.utc)
+
     expires_at = now + (
         expires_delta
         if expires_delta is not None
@@ -57,3 +60,13 @@ def decode_access_token(token: str) -> dict[str, Any]:
         settings.jwt_secret_key,
         algorithms=[settings.jwt_algorithm],
     )
+
+
+def generate_email_verification_token() -> str:
+    """Generate a cryptographically secure email verification token."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_email_verification_token(token: str) -> str:
+    """Return the SHA-256 hash of an email verification token."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

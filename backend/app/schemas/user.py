@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -19,10 +20,28 @@ class UserResponse(BaseModel):
     full_name: str
     email: EmailStr
     is_active: bool
+    is_verified: bool
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RegistrationResponse(BaseModel):
+    message: str
+    email: EmailStr
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=256)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 class TokenResponse(BaseModel):

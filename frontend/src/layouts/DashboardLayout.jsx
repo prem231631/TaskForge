@@ -1,19 +1,19 @@
-
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
+import './DashboardLayout.css'
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="flex min-h-screen bg-[#f7f7fa]">
-      <div className="hidden lg:block">
+    <div className="dashboard-layout">
+      <div className="dashboard-layout__sidebar">
         <Sidebar />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="dashboard-layout__main">
         <Header />
 
-        <main className="flex-1 px-5 py-7 sm:px-8 lg:px-10">
-          <div className="mx-auto w-full max-w-[1500px]">
+        <main className="dashboard-layout__content">
+          <div className="dashboard-layout__content-inner">
             {children}
           </div>
         </main>

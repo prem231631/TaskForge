@@ -1,7 +1,10 @@
 
+import html
 import logging
 import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
+from urllib.parse import urlencode
 
 from app.core.config import get_settings
 
@@ -30,16 +33,20 @@ def send_verification_email(
             "Please configure the SMTP environment variables."
         )
 
+    query_string = urlencode({"token": verification_token})
+
     verification_url = (
         f"{settings.frontend_base_url.rstrip('/')}"
-        f"/verify-email?token={verification_token}"
+        f"/verify-email?{query_string}"
     )
+
+    safe_name = html.escape(recipient_name, quote=True)
+    safe_url = html.escape(verification_url, quote=True)
 
     message = EmailMessage()
     message["Subject"] = "Verify your TaskForge email address"
-    message["From"] = (
-        f"{settings.smtp_sender_name} "
-        f"<{settings.smtp_sender_email}>"
+    message["From"] = formataddr(
+        (settings.smtp_sender_name, settings.smtp_sender_email)
     )
     message["To"] = recipient_email
 
@@ -63,44 +70,44 @@ TaskForge Team
     )
 
     message.add_alternative(
-        f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; color: #252533;">
-                <div style="max-width: 560px; margin: 30px auto; padding: 32px;
-                            border: 1px solid #e8e8ee; border-radius: 12px;">
-                    <h1 style="font-size: 24px;">Welcome to TaskForge</h1>
+        f"""\
+<html>
+    <body style="font-family: Arial, sans-serif; color: #252533;">
+        <div style="max-width: 560px; margin: 30px auto; padding: 32px;
+                    border: 1px solid #e8e8ee; border-radius: 12px;">
+            <h1 style="font-size: 24px;">Welcome to TaskForge</h1>
 
-                    <p>Hello {recipient_name},</p>
+            <p>Hello {safe_name},</p>
 
-                    <p>
-                        Thank you for creating your TaskForge account.
-                        Please verify your email address to activate your account.
-                    </p>
+            <p>
+                Thank you for creating your TaskForge account.
+                Please verify your email address to activate your account.
+            </p>
 
-                    <p style="margin: 30px 0;">
-                        <a href="{verification_url}"
-                           style="background: #6755e8; color: white;
-                                  padding: 13px 22px; border-radius: 7px;
-                                  text-decoration: none; font-weight: bold;">
-                            Verify Email Address
-                        </a>
-                    </p>
+            <p style="margin: 30px 0;">
+                <a href="{safe_url}"
+                   style="background: #6755e8; color: white;
+                          padding: 13px 22px; border-radius: 7px;
+                          text-decoration: none; font-weight: bold;">
+                    Verify Email Address
+                </a>
+            </p>
 
-                    <p>
-                        This link expires in
-                        {settings.email_verification_expire_minutes} minutes.
-                    </p>
+            <p>
+                This link expires in
+                {settings.email_verification_expire_minutes} minutes.
+            </p>
 
-                    <p style="color: #777; font-size: 13px;">
-                        If you did not create this account, you can ignore
-                        this email.
-                    </p>
+            <p style="color: #777; font-size: 13px;">
+                If you did not create this account, you can ignore
+                this email.
+            </p>
 
-                    <p>Regards,<br>TaskForge Team</p>
-                </div>
-            </body>
-        </html>
-        """,
+            <p>Regards,<br>TaskForge Team</p>
+        </div>
+    </body>
+</html>
+""",
         subtype="html",
     )
 
@@ -124,10 +131,7 @@ TaskForge Team
             server.send_message(message)
 
     except (smtplib.SMTPException, OSError):
-        logger.exception(
-            "Failed to deliver verification email to %s",
-            recipient_email,
-        )
+        logger.exception("TaskForge verification email delivery failed.")
         raise RuntimeError(
             "Unable to send the verification email. "
             "Please try again later."

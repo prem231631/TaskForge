@@ -10,16 +10,19 @@ from app.schemas.user import UserCreate
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     """Find a user by email address, ignoring case."""
+
     normalized_email = str(email).strip().lower()
 
     statement = select(User).where(
         User.email == normalized_email
     )
+
     return db.scalar(statement)
 
 
 def register_user(db: Session, user_data: UserCreate) -> User:
-    """Create a user account with a securely hashed password."""
+    """Create a new unverified user account."""
+
     normalized_email = str(user_data.email).strip().lower()
 
     if get_user_by_email(db, normalized_email) is not None:
@@ -29,6 +32,7 @@ def register_user(db: Session, user_data: UserCreate) -> User:
         full_name=user_data.full_name.strip(),
         email=normalized_email,
         hashed_password=hash_password(user_data.password),
+        is_verified=False,
     )
 
     db.add(user)
@@ -36,8 +40,10 @@ def register_user(db: Session, user_data: UserCreate) -> User:
     try:
         db.commit()
         db.refresh(user)
+
     except IntegrityError as exc:
         db.rollback()
+
         raise ValueError(
             "An account with this email already exists."
         ) from exc
@@ -50,7 +56,8 @@ def authenticate_user(
     email: str,
     password: str,
 ) -> User | None:
-    """Return an active user when their credentials are valid."""
+    """Authenticate a verified and active user."""
+
     user = get_user_by_email(db, email)
 
     if user is None:
@@ -60,6 +67,9 @@ def authenticate_user(
         return None
 
     if not user.is_active:
+        return None
+
+    if not user.is_verified:
         return None
 
     return user

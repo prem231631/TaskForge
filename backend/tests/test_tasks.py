@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
+from tests.helpers import register_and_login
 
 
 test_engine = create_engine(
@@ -43,32 +44,6 @@ def client():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
-
-
-def register_and_login(
-    client: TestClient,
-    email: str,
-) -> str:
-    registration = client.post(
-        "/auth/register",
-        json={
-            "full_name": "Task Test User",
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert registration.status_code == 201
-
-    login = client.post(
-        "/auth/login",
-        json={
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert login.status_code == 200
-
-    return login.json()["access_token"]
 
 
 def auth_headers(token: str) -> dict[str, str]:
@@ -326,7 +301,6 @@ def test_task_update_rejects_invalid_values(
     client: TestClient,
     payload: dict,
 ):
-    # Each test fixture gets a fresh database, so this address is reusable.
     token = register_and_login(
         client,
         "invalid-update@example.com",
@@ -406,12 +380,7 @@ def test_workspace_member_can_be_assigned_task(
     member_email = "task-assignment-member-valid@example.com"
 
     register_and_login(client, member_email)
-    member_token = register_and_login(
-        client,
-        "task-assignment-member-login@example.com",
-    )
 
-    # Add the registered member by the email expected by the workspace API.
     workspace = create_workspace(client, owner_token)
 
     membership = client.post(

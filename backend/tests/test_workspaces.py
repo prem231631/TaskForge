@@ -1,3 +1,4 @@
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -8,6 +9,7 @@ from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
 from app.models import Workspace, WorkspaceMembership
+from tests.helpers import register_and_login
 
 
 test_engine = create_engine(
@@ -41,32 +43,6 @@ def client():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
-
-
-def register_and_login(
-    client: TestClient,
-    email: str,
-) -> str:
-    registration = client.post(
-        "/auth/register",
-        json={
-            "full_name": "Workspace Test User",
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert registration.status_code == 201
-
-    login = client.post(
-        "/auth/login",
-        json={
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert login.status_code == 200
-
-    return login.json()["access_token"]
 
 
 def auth_headers(token: str) -> dict[str, str]:
@@ -259,7 +235,7 @@ def test_owner_can_add_registered_member(client: TestClient):
 def test_owner_cannot_add_duplicate_member(client: TestClient):
     owner_token = register_and_login(client, "duplicate-owner@example.com")
     register_and_login(client, "duplicate-member@example.com")
-    workspace = create_workspace(client, owner_token, "Duplicate Check")
+    workspace = create_workspace(client, owner_token, "DuplicateCheck")
 
     url = f"/workspaces/{workspace['id']}/members"
     headers = auth_headers(owner_token)
@@ -476,7 +452,7 @@ def test_non_owner_cannot_update_workspace(client: TestClient):
 def test_owner_can_delete_workspace_and_memberships(client: TestClient):
     owner_token = register_and_login(client, "delete-owner@example.com")
     register_and_login(client, "delete-member@example.com")
-    workspace = create_workspace(client, owner_token, "Workspace To Delete")
+    workspace = create_workspace(client, owner_token, "WorkspaceTo Delete")
 
     added = client.post(
         f"/workspaces/{workspace['id']}/members",
@@ -507,7 +483,11 @@ def test_owner_can_delete_workspace_and_memberships(client: TestClient):
 def test_non_owner_cannot_delete_workspace(client: TestClient):
     owner_token = register_and_login(client, "delete-permission-owner@example.com")
     member_token = register_and_login(client, "delete-permission-member@example.com")
-    workspace = create_workspace(client, owner_token, "Protected From Deletion")
+    workspace = create_workspace(
+        client,
+        owner_token,
+        "Protected From Deletion",
+    )
 
     added = client.post(
         f"/workspaces/{workspace['id']}/members",

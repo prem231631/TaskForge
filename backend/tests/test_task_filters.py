@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
+from tests.helpers import register_and_login
 
 
 test_engine = create_engine(
@@ -43,29 +44,6 @@ def client():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
-
-
-def register_and_login(client: TestClient, email: str) -> str:
-    registration = client.post(
-        "/auth/register",
-        json={
-            "full_name": "Task Filter Test User",
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert registration.status_code == 201
-
-    login = client.post(
-        "/auth/login",
-        json={
-            "email": email,
-            "password": "Secure-Test-Password-123!",
-        },
-    )
-    assert login.status_code == 200
-
-    return login.json()["access_token"]
 
 
 def auth_headers(token: str) -> dict[str, str]:

@@ -1,4 +1,5 @@
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,7 +9,7 @@ from app.core.rate_limiter import limiter
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app
-from tests.helpers import register_and_login, register_user
+from tests.helpers import register_user, verify_user
 
 
 test_engine = create_engine(
@@ -24,7 +25,8 @@ TestingSessionLocal = sessionmaker(
 )
 
 
-def client_fixture():
+@pytest.fixture
+def client():
     limiter.reset()
     Base.metadata.create_all(bind=test_engine)
 
@@ -37,19 +39,12 @@ def client_fixture():
 
     app.dependency_overrides[get_db] = override_get_db
 
-    from fastapi.testclient import TestClient
-
     with TestClient(app) as test_client:
         yield test_client
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
     limiter.reset()
-
-
-import pytest
-
-client = pytest.fixture(client_fixture)
 
 
 def test_registration_rate_limit(client: TestClient):
@@ -59,8 +54,6 @@ def test_registration_rate_limit(client: TestClient):
             f"rate-limit-{index}@example.com",
             "Rate Limit User",
         )
-
-        # Registration is intentionally not verified here.
         assert verification_token
 
     blocked_response = client.post(
@@ -76,11 +69,13 @@ def test_registration_rate_limit(client: TestClient):
 
 
 def test_login_rate_limit(client: TestClient):
-    register_and_login(
+    _, verification_token = register_user(
         client,
         "login-rate@example.com",
         "Login Rate User",
     )
+
+    verify_user(client, verification_token)
 
     payload = {
         "email": "login-rate@example.com",
@@ -99,37 +94,28 @@ def test_login_rate_limit(client: TestClient):
 def test_registration_and_login_have_separate_limits(
     client: TestClient,
 ):
+    first_verification_token = None
+
     for index in range(5):
         _, verification_token = register_user(
             client,
             f"separate-{index}@example.com",
             "Separate Limit User",
         )
-        assert verification_token
 
-    # Verify the first account without making another registration request.
-    from app.core.security import hash_email_verification_token
-    from app.models import EmailVerificationToken
-    from sqlalchemy import select
+        if index == 0:
+            first_verification_token = verification_token
 
-    with TestingSessionLocal() as db:
-        verification_record = db.scalar(
-            select(EmailVerificationToken).where(
-                EmailVerificationToken.token_hash
-                == hash_email_verification_token(
-                    # The helper's generated token is needed here.
-                    # Use the account registration flow in the next revision.
-                    "unused",
-                )
-            )
-        )
+    assert first_verification_token is not None
 
-    # Registration and login limits are tested independently.
-    # The account must be verified before its login can succeed.
-    token = register_and_login(
-        client,
-        "separate-login@example.com",
-        "Separate Limit User",
+    verify_user(client, first_verification_token)
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": "separate-0@example.com",
+            "password": "Secure-Test-Password-123!",
+        },
     )
 
-    assert token
+    assert login_response.status_code == 200

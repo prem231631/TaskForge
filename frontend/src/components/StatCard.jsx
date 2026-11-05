@@ -1,8 +1,9 @@
-
 import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react'
+
+import './StatCard.css'
 
 export default function StatCard({
   title,
@@ -13,29 +14,29 @@ export default function StatCard({
   positive = true,
 }) {
   return (
-    <div className="rounded-2xl border border-[#e9e9ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gray-100">
-      <div className="flex items-start justify-between">
+    <div className="stat-card">
+      <div className="stat-card__top">
         <div>
-          <p className="text-sm font-medium text-gray-500">
+          <p className="stat-card__title">
             {title}
           </p>
 
-          <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#20202a]">
+          <h3 className="stat-card__value">
             {value}
           </h3>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-[#6755e8]">
+        <div className="stat-card__icon">
           <Icon size={21} />
         </div>
       </div>
 
-      <div className="mt-5 flex items-center gap-2">
+      <div className="stat-card__bottom">
         <span
-          className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${
+          className={`stat-card__change ${
             positive
-              ? 'bg-emerald-50 text-emerald-600'
-              : 'bg-red-50 text-red-600'
+              ? 'stat-card__change--positive'
+              : 'stat-card__change--negative'
           }`}
         >
           {positive ? (
@@ -47,7 +48,7 @@ export default function StatCard({
           {change}
         </span>
 
-        <span className="text-xs text-gray-400">
+        <span className="stat-card__description">
           {description}
         </span>
       </div>

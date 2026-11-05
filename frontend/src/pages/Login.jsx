@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import './Login.css'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -63,7 +63,7 @@ export default function Login() {
       } else {
         setError(
           err.response?.data?.detail ||
-          'Unable to sign in. Please check your connection and try again.',
+            'Unable to sign in. Please check your connection and try again.',
         )
       }
     } finally {
@@ -72,48 +72,31 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f7f7fa] px-5 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6755e8] text-white shadow-lg shadow-violet-200">
+    <main className="auth-page">
+      <div className="auth-container">
+        <Link to="/login" className="auth-brand">
+          <div className="auth-brand-icon">
             <Zap size={24} fill="white" />
           </div>
 
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#20202a]">
-              TaskForge
-            </h1>
-            <p className="text-xs text-gray-400">
-              Workspace platform
-            </p>
+          <div className="auth-brand-content">
+            <h1>TaskForge</h1>
+            <p>Workspace platform</p>
           </div>
-        </div>
+        </Link>
 
-        <section className="rounded-2xl border border-[#e9e9ef] bg-white p-7 shadow-xl shadow-gray-200/50 sm:p-9">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-[#20202a]">
-              Welcome back
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Sign in to continue to your workspace.
-            </p>
+        <section className="auth-card">
+          <div className="auth-card-heading">
+            <h2>Welcome back</h2>
+            <p>Sign in to continue to your workspace.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label htmlFor="email">Email address</label>
 
-              <div className="relative">
-                <Mail
-                  size={18}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                />
+              <div className="auth-input-wrapper">
+                <Mail className="auth-input-icon" size={18} />
 
                 <input
                   id="email"
@@ -124,24 +107,16 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="you@example.com"
-                  className="h-12 w-full rounded-xl border border-[#e9e9ef] bg-[#fafafd] pl-11 pr-4 text-sm outline-none transition focus:border-[#6755e8] focus:ring-4 focus:ring-violet-100"
+                  className="auth-input"
                 />
               </div>
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
 
-              <div className="relative">
-                <LockKeyhole
-                  size={18}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                />
+              <div className="auth-input-wrapper">
+                <LockKeyhole className="auth-input-icon" size={18} />
 
                 <input
                   id="password"
@@ -152,14 +127,14 @@ export default function Login() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className="h-12 w-full rounded-xl border border-[#e9e9ef] bg-[#fafafd] pl-11 pr-12 text-sm outline-none transition focus:border-[#6755e8] focus:ring-4 focus:ring-violet-100"
+                  className="auth-input auth-input-with-action"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-700"
+                  className="auth-password-toggle"
                 >
                   {showPassword ? (
                     <EyeOff size={18} />
@@ -171,10 +146,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <div
-                role="alert"
-                className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600"
-              >
+              <div className="auth-error" role="alert">
                 {error}
               </div>
             )}
@@ -182,11 +154,11 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6755e8] text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:bg-[#5140cc] disabled:cursor-not-allowed disabled:opacity-70"
+              className="auth-submit-button"
             >
               {isSubmitting ? (
                 <>
-                  <LoaderCircle size={18} className="animate-spin" />
+                  <LoaderCircle size={18} className="auth-spinner" />
                   Signing in...
                 </>
               ) : (
@@ -198,20 +170,15 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-7 border-t border-[#f0f0f4] pt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-semibold text-[#6755e8] transition hover:text-[#5140cc]"
-              >
-                Create account
-              </Link>
+          <div className="auth-card-footer">
+            <p>
+              Don&apos;t have an account?{' '}
+              <Link to="/register">Create account</Link>
             </p>
           </div>
         </section>
 
-        <p className="mt-6 text-center text-xs text-gray-400">
+        <p className="auth-copyright">
           © {new Date().getFullYear()} TaskForge. All rights reserved.
         </p>
       </div>

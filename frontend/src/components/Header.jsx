@@ -1,75 +1,106 @@
-
 import {
   Search,
   Bell,
   ChevronDown,
   Menu,
   Plus,
+  Sun,
+  Moon,
 } from 'lucide-react'
 
+import { useTheme } from '../context/ThemeContext'
+import './Header.css'
+
 export default function Header() {
+  const { theme, toggleTheme } = useTheme()
+
   return (
-    <header className="flex h-[76px] items-center justify-between border-b border-[#e9e9ef] bg-white px-8">
-      <div className="flex items-center gap-4">
+    <header className="dashboard-header">
+      <div className="dashboard-header__left">
         <button
-          className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
+          className="dashboard-header__mobile-menu"
           aria-label="Open navigation"
+          type="button"
         >
           <Menu size={21} />
         </button>
 
-        <div className="relative hidden w-80 sm:block">
+        <div className="dashboard-header__search">
           <Search
             size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="dashboard-header__search-icon"
           />
 
           <input
             type="search"
             placeholder="Search anything..."
-            className="h-10 w-full rounded-lg border border-[#e9e9ef] bg-[#fafafd] pl-10 pr-4 text-sm outline-none transition placeholder:text-gray-400 focus:border-[#6755e8] focus:ring-2 focus:ring-violet-100"
+            aria-label="Search"
           />
 
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400">
+          <span className="dashboard-header__shortcut">
             /
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-5">
-        <button className="hidden items-center gap-2 rounded-lg bg-[#6755e8] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#5140cc] sm:flex">
+      <div className="dashboard-header__right">
+        <button
+          className="dashboard-header__new-task"
+          type="button"
+        >
           <Plus size={17} />
           New Task
         </button>
 
         <button
-          className="relative rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+          className="dashboard-header__icon-button"
+          type="button"
+          aria-label={
+            theme === 'light'
+              ? 'Switch to dark theme'
+              : 'Switch to light theme'
+          }
+          onClick={toggleTheme}
+        >
+          {theme === 'light' ? (
+            <Moon size={19} />
+          ) : (
+            <Sun size={19} />
+          )}
+        </button>
+
+        <button
+          className="dashboard-header__icon-button"
+          type="button"
           aria-label="Notifications"
         >
           <Bell size={20} />
-
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
+          <span className="dashboard-header__notification-dot" />
         </button>
 
-        <div className="h-8 w-px bg-gray-200" />
+        <div className="dashboard-header__divider" />
 
-        <button className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9e5ff] text-sm font-semibold text-[#6755e8]">
+        <button
+          className="dashboard-header__profile"
+          type="button"
+          aria-label="User profile"
+        >
+          <div className="dashboard-header__avatar">
             PR
           </div>
 
-          <div className="hidden text-left sm:block">
-            <p className="text-sm font-semibold text-gray-800">
+          <div className="dashboard-header__profile-info">
+            <p className="dashboard-header__profile-name">
               Prem Raj
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="dashboard-header__profile-role">
               Workspace member
             </p>
           </div>
 
           <ChevronDown
             size={15}
-            className="hidden text-gray-400 sm:block"
+            className="dashboard-header__profile-chevron"
           />
         </button>
       </div>

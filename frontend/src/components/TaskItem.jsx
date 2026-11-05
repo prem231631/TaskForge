@@ -1,4 +1,3 @@
-
 import {
   CalendarDays,
   Circle,
@@ -7,35 +6,38 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 
+import './TaskItem.css'
+
 const statusConfig = {
   todo: {
     label: 'To Do',
     icon: Circle,
-    className: 'text-gray-400',
+    className: 'task-item__status-icon--todo',
   },
   in_progress: {
     label: 'In Progress',
     icon: CircleDot,
-    className: 'text-blue-500',
+    className: 'task-item__status-icon--in-progress',
   },
   done: {
     label: 'Completed',
     icon: CheckCircle2,
-    className: 'text-emerald-500',
+    className: 'task-item__status-icon--done',
   },
 }
 
 const priorityConfig = {
-  low: 'bg-gray-100 text-gray-600',
-  medium: 'bg-amber-50 text-amber-600',
-  high: 'bg-red-50 text-red-600',
+  low: 'task-item__priority--low',
+  medium: 'task-item__priority--medium',
+  high: 'task-item__priority--high',
 }
 
 export default function TaskItem({ task }) {
   const status = statusConfig[task.status] || statusConfig.todo
   const StatusIcon = status.icon
 
-  const priority = priorityConfig[task.priority] || priorityConfig.low
+  const priority =
+    priorityConfig[task.priority] || priorityConfig.low
 
   const dueDate = task.due_date
     ? new Date(task.due_date).toLocaleDateString('en', {
@@ -45,39 +47,38 @@ export default function TaskItem({ task }) {
     : 'No due date'
 
   return (
-    <div className="flex items-center gap-4 border-b border-[#f0f0f4] px-5 py-4 last:border-b-0">
+    <div className="task-item">
       <StatusIcon
         size={19}
-        className={`shrink-0 ${status.className}`}
+        className={`task-item__status-icon ${status.className}`}
       />
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">
+      <div className="task-item__details">
+        <p className="task-item__title">
           {task.title}
         </p>
 
-        <p className="mt-1 truncate text-xs text-gray-400">
+        <p className="task-item__description">
           {task.description || 'No description provided'}
         </p>
       </div>
 
-      <span
-        className={`hidden rounded-md px-2.5 py-1 text-xs font-medium capitalize sm:inline-flex ${priority}`}
-      >
+      <span className={`task-item__priority ${priority}`}>
         {task.priority || 'low'}
       </span>
 
-      <div className="hidden items-center gap-1.5 text-xs text-gray-400 md:flex">
+      <div className="task-item__due-date">
         <CalendarDays size={14} />
         {dueDate}
       </div>
 
-      <span className="hidden text-xs text-gray-400 lg:block">
+      <span className="task-item__status-label">
         {status.label}
       </span>
 
       <button
-        className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+        className="task-item__more"
+        type="button"
         aria-label={`More options for ${task.title}`}
       >
         <MoreHorizontal size={18} />

@@ -14,6 +14,8 @@ import DashboardLayout from '../layouts/DashboardLayout'
 import StatCard from '../components/StatCard'
 import TaskItem from '../components/TaskItem'
 
+import './Dashboard.css'
+
 const sampleTasks = [
   {
     id: 1,
@@ -52,31 +54,32 @@ const sampleTasks = [
 export default function Dashboard() {
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Page heading */}
-        <section className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+      <div className="dashboard-page">
+        <section className="dashboard-page__heading">
           <div>
-            <p className="text-sm font-medium text-[#6755e8]">
+            <p className="dashboard-page__eyebrow">
               WORKSPACE OVERVIEW
             </p>
 
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#20202a] sm:text-3xl">
+            <h1 className="dashboard-page__title">
               Dashboard
             </h1>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="dashboard-page__subtitle">
               Here's what's happening with your workspace today.
             </p>
           </div>
 
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#6755e8] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-[#5140cc]">
+          <button
+            className="dashboard-page__primary-button"
+            type="button"
+          >
             <Plus size={18} />
             Create new task
           </button>
         </section>
 
-        {/* Statistics */}
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="dashboard-page__stats">
           <StatCard
             title="Total Tasks"
             value="24"
@@ -110,22 +113,23 @@ export default function Dashboard() {
           />
         </section>
 
-        {/* Main content */}
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          {/* Task list */}
-          <div className="overflow-hidden rounded-2xl border border-[#e9e9ef] bg-white xl:col-span-2">
-            <div className="flex items-center justify-between border-b border-[#f0f0f4] px-5 py-5 sm:px-6">
+        <section className="dashboard-page__content-grid">
+          <div className="dashboard-panel">
+            <div className="dashboard-panel__header">
               <div>
-                <h2 className="text-base font-semibold text-[#20202a]">
+                <h2 className="dashboard-panel__heading">
                   Recent Tasks
                 </h2>
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="dashboard-panel__description">
                   A quick look at your latest activities
                 </p>
               </div>
 
-              <button className="flex items-center gap-1 text-sm font-medium text-[#6755e8] transition hover:text-[#5140cc]">
+              <button
+                className="dashboard-panel__link"
+                type="button"
+              >
                 View all
                 <ArrowUpRight size={16} />
               </button>
@@ -137,140 +141,152 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <div className="border-t border-[#f0f0f4] px-5 py-4 text-center sm:px-6">
-              <button className="text-sm font-medium text-gray-500 transition hover:text-[#6755e8]">
+            <div className="dashboard-panel__footer">
+              <button
+                className="dashboard-panel__footer-button"
+                type="button"
+              >
                 View all tasks
               </button>
             </div>
           </div>
 
-          {/* Right column */}
-          <div className="space-y-6">
-            {/* Progress card */}
-            <div className="rounded-2xl border border-[#e9e9ef] bg-white p-6">
-              <div className="flex items-center justify-between">
+          <div className="dashboard-page__side-column">
+            <section className="dashboard-widget">
+              <div className="dashboard-widget__header">
                 <div>
-                  <h2 className="text-base font-semibold text-[#20202a]">
+                  <h2 className="dashboard-widget__title">
                     Task Progress
                   </h2>
 
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="dashboard-widget__subtitle">
                     Overall completion
                   </p>
                 </div>
 
-                <Activity size={20} className="text-[#6755e8]" />
+                <Activity
+                  size={20}
+                  className="dashboard-widget__icon"
+                />
               </div>
 
-              <div className="mt-7 flex items-end justify-between">
-                <h3 className="text-4xl font-bold tracking-tight text-[#20202a]">
+              <div className="dashboard-progress__summary">
+                <h3 className="dashboard-progress__percentage">
                   68%
                 </h3>
 
-                <span className="mb-1 text-xs font-medium text-emerald-600">
+                <span className="dashboard-progress__status">
                   On track
                 </span>
               </div>
 
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#f0efff]">
-                <div className="h-full w-[68%] rounded-full bg-[#6755e8]" />
+              <div
+                className="dashboard-progress__track"
+                role="progressbar"
+                aria-label="Task completion"
+                aria-valuenow={68}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div className="dashboard-progress__bar" />
               </div>
 
-              <div className="mt-5 flex justify-between text-xs text-gray-400">
+              <div className="dashboard-progress__footer">
                 <span>Completed tasks</span>
                 <span>16 of 24</span>
               </div>
-            </div>
+            </section>
 
-            {/* Weekly summary */}
-            <div className="rounded-2xl border border-[#e9e9ef] bg-white p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <section className="dashboard-widget">
+              <div className="dashboard-summary__heading">
+                <div className="dashboard-summary__icon">
                   <CircleCheck size={21} />
                 </div>
 
                 <div>
-                  <h2 className="text-base font-semibold text-[#20202a]">
+                  <h2 className="dashboard-widget__title">
                     Weekly Summary
                   </h2>
 
-                  <p className="text-xs text-gray-400">
+                  <p className="dashboard-widget__subtitle">
                     Your productivity snapshot
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">
+              <div className="dashboard-summary__list">
+                <div className="dashboard-summary__row">
+                  <span className="dashboard-summary__label">
                     Tasks completed
                   </span>
 
-                  <span className="text-sm font-semibold text-[#20202a]">
+                  <span className="dashboard-summary__value">
                     12
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">
+                <div className="dashboard-summary__row">
+                  <span className="dashboard-summary__label">
                     Upcoming deadlines
                   </span>
 
-                  <span className="text-sm font-semibold text-[#20202a]">
+                  <span className="dashboard-summary__value">
                     05
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">
+                <div className="dashboard-summary__row">
+                  <span className="dashboard-summary__label">
                     Active projects
                   </span>
 
-                  <span className="text-sm font-semibold text-[#20202a]">
+                  <span className="dashboard-summary__value">
                     03
                   </span>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Upcoming activity */}
-            <div className="rounded-2xl border border-[#e9e9ef] bg-white p-6">
-              <div className="flex items-center gap-2">
-                <CalendarDays size={19} className="text-[#6755e8]" />
+            <section className="dashboard-widget">
+              <div className="dashboard-upcoming__heading">
+                <CalendarDays
+                  size={19}
+                  className="dashboard-upcoming__heading-icon"
+                />
 
-                <h2 className="text-base font-semibold text-[#20202a]">
+                <h2 className="dashboard-widget__title">
                   Upcoming
                 </h2>
               </div>
 
-              <div className="mt-5 rounded-xl bg-[#f8f7ff] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#6755e8]">
+              <div className="dashboard-upcoming__item dashboard-upcoming__item--highlight">
+                <p className="dashboard-upcoming__date">
                   November 04
                 </p>
 
-                <p className="mt-2 text-sm font-medium text-gray-800">
+                <p className="dashboard-upcoming__task">
                   Authentication flow design
                 </p>
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="dashboard-upcoming__type">
                   Task deadline
                 </p>
               </div>
 
-              <div className="mt-3 rounded-xl bg-[#fafafd] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="dashboard-upcoming__item">
+                <p className="dashboard-upcoming__date dashboard-upcoming__date--muted">
                   November 06
                 </p>
 
-                <p className="mt-2 text-sm font-medium text-gray-800">
+                <p className="dashboard-upcoming__task">
                   Dashboard components
                 </p>
 
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="dashboard-upcoming__type">
                   Task deadline
                 </p>
               </div>
-            </div>
+            </section>
           </div>
         </section>
       </div>

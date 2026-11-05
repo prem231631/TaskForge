@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   CheckSquare,
@@ -10,6 +9,8 @@ import {
   Zap,
   CircleHelp,
 } from 'lucide-react'
+
+import './Sidebar.css'
 
 const navigation = [
   {
@@ -25,51 +26,58 @@ const navigation = [
 
 export default function Sidebar() {
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col bg-[#171722] px-5 py-6 text-white">
-      <div className="mb-10 flex items-center gap-3 px-1">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#6755e8]">
+    <aside className="task-sidebar">
+      <div className="task-sidebar__brand">
+        <div className="task-sidebar__brand-icon">
           <Zap size={23} fill="white" />
         </div>
 
         <div>
-          <h1 className="text-lg font-bold tracking-tight">TaskForge</h1>
-          <p className="text-xs text-gray-400">Workspace platform</p>
+          <h1>TaskForge</h1>
+          <p>Workspace platform</p>
         </div>
       </div>
 
-      <button className="mb-8 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/20 text-sm font-semibold text-violet-300">
+      <button className="task-sidebar__workspace">
+        <div className="task-sidebar__workspace-info">
+          <div className="task-sidebar__workspace-avatar">
             TF
           </div>
 
           <div>
-            <p className="text-sm font-medium">My Workspace</p>
-            <p className="text-xs text-gray-400">Free plan</p>
+            <p className="task-sidebar__workspace-name">
+              My Workspace
+            </p>
+            <p className="task-sidebar__workspace-plan">
+              Free plan
+            </p>
           </div>
         </div>
 
-        <ChevronDown size={16} className="text-gray-400" />
+        <ChevronDown
+          size={16}
+          className="task-sidebar__workspace-chevron"
+        />
       </button>
 
-      <div className="flex-1">
+      <div className="task-sidebar__navigation">
         {navigation.map((group) => (
-          <div key={group.title} className="mb-8">
-            <p className="mb-3 px-3 text-[10px] font-semibold tracking-[0.16em] text-gray-500">
+          <div key={group.title} className="task-sidebar__group">
+            <p className="task-sidebar__group-title">
               {group.title}
             </p>
 
-            <nav className="space-y-1">
+            <nav className="task-sidebar__nav-list">
               {group.items.map((item) => {
                 const Icon = item.icon
 
                 return (
                   <button
                     key={item.label}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                    className={`task-sidebar__nav-item ${
                       item.active
-                        ? 'bg-[#6755e8] font-medium text-white'
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        ? 'task-sidebar__nav-item--active'
+                        : ''
                     }`}
                   >
                     <Icon size={18} />
@@ -81,19 +89,19 @@ export default function Sidebar() {
           </div>
         ))}
 
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-400 transition hover:bg-white/5 hover:text-white">
+        <button className="task-sidebar__nav-item">
           <Plus size={18} />
           Create workspace
         </button>
       </div>
 
-      <div className="space-y-1 border-t border-white/10 pt-5">
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-400 transition hover:bg-white/5 hover:text-white">
+      <div className="task-sidebar__footer">
+        <button className="task-sidebar__nav-item">
           <CircleHelp size={18} />
           Help & Support
         </button>
 
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-400 transition hover:bg-white/5 hover:text-white">
+        <button className="task-sidebar__nav-item">
           <Settings size={18} />
           Settings
         </button>

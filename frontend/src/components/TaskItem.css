@@ -1,0 +1,140 @@
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color 0.2s ease;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-item:hover {
+  background: var(--color-surface-secondary);
+}
+
+.task-item__status-icon {
+  flex-shrink: 0;
+}
+
+.task-item__status-icon--todo {
+  color: var(--color-muted);
+}
+
+.task-item__status-icon--in-progress {
+  color: var(--color-info);
+}
+
+.task-item__status-icon--done {
+  color: var(--color-success);
+}
+
+.task-item__details {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-item__title {
+  overflow: hidden;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-item__description {
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-item__priority {
+  display: none;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.task-item__priority--low {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-secondary);
+}
+
+.task-item__priority--medium {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.task-item__priority--high {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.task-item__due-date {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.task-item__status-label {
+  display: none;
+  color: var(--color-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.task-item__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 7px;
+  color: var(--color-muted);
+  background: transparent;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.task-item__more:hover {
+  color: var(--color-text);
+  background: var(--color-background);
+}
+
+@media (min-width: 640px) {
+  .task-item__priority {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 768px) {
+  .task-item__due-date {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .task-item__status-label {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-item {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+}

@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -52,20 +53,20 @@ export default function Register() {
       return
     }
 
+    const email = formData.email.trim()
+
     setIsSubmitting(true)
 
     try {
       await register({
         full_name: formData.full_name.trim(),
-        email: formData.email.trim(),
+        email,
         password: formData.password,
       })
 
-      navigate('/login', {
+      navigate('/check-email', {
         replace: true,
-        state: {
-          message: 'Account created successfully. Please sign in.',
-        },
+        state: { email },
       })
     } catch (err) {
       const status = err.response?.status

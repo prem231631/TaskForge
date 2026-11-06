@@ -1,14 +1,12 @@
-
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
 } from 'react'
 
-const ThemeContext = createContext(null)
+export const ThemeContext = createContext(null)
 
 const THEME_STORAGE_KEY = 'taskforge_theme'
 
@@ -60,14 +58,4 @@ export function ThemeProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext)
-
-  if (!context) {
-    throw new Error('useTheme must be used inside a ThemeProvider.')
-  }
-
-  return context
 }

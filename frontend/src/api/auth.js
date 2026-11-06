@@ -1,7 +1,24 @@
+
 import apiClient from './client'
 
 export async function registerUser(userData) {
   const response = await apiClient.post('/auth/register', userData)
+
+  return response.data
+}
+
+export async function verifyEmail(token) {
+  const response = await apiClient.post('/auth/verify-email', {
+    token,
+  })
+
+  return response.data
+}
+
+export async function resendVerificationEmail(email) {
+  const response = await apiClient.post('/auth/resend-verification', {
+    email,
+  })
 
   return response.data
 }

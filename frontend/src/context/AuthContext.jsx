@@ -1,8 +1,6 @@
-
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -14,7 +12,7 @@ import {
   registerUser,
 } from '../api/auth'
 
-const AuthContext = createContext(null)
+export const AuthContext = createContext(null)
 
 const TOKEN_KEY = 'taskforge_access_token'
 
@@ -107,14 +105,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth must be used inside an AuthProvider.')
-  }
-
-  return context
 }

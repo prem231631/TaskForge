@@ -2,7 +2,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { LoaderCircle, Zap } from 'lucide-react'
 
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 export default function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth()

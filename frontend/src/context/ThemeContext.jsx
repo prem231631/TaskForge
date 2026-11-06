@@ -1,12 +1,11 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from 'react'
 
-export const ThemeContext = createContext(null)
+import { ThemeContext } from './theme-context'
 
 const THEME_STORAGE_KEY = 'taskforge_theme'
 

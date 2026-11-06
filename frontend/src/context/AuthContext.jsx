@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -12,7 +11,7 @@ import {
   registerUser,
 } from '../api/auth'
 
-export const AuthContext = createContext(null)
+import { AuthContext } from './auth-context'
 
 const TOKEN_KEY = 'taskforge_access_token'
 

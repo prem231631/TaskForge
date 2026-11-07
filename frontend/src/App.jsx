@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import CheckEmail from './pages/CheckEmail'
+import VerifyEmail from './pages/VerifyEmail'
 
 import ProtectedRoute from './routes/ProtectedRoute'
 import GuestRoute from './routes/GuestRoute'
@@ -18,6 +19,8 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/check-email" element={<CheckEmail />} />
         </Route>
+
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />

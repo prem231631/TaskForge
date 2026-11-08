@@ -52,7 +52,10 @@ export function WorkspaceProvider({ children }) {
     }
   }, [])
 
-  const visibleWorkspaces = isAuthenticated ? workspaces : []
+  const visibleWorkspaces = useMemo(
+    () => (isAuthenticated ? workspaces : []),
+    [isAuthenticated, workspaces],
+  )
 
   const selectedWorkspace = useMemo(
     () =>

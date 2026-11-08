@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
 
 import {
   LayoutDashboard,
@@ -16,18 +17,6 @@ import {
 
 import { useWorkspace } from '../context/useWorkspace'
 import './Sidebar.css'
-
-const navigation = [
-  {
-    title: 'WORKSPACE',
-    items: [
-      { label: 'Overview', icon: LayoutDashboard, active: true },
-      { label: 'My Tasks', icon: CheckSquare },
-      { label: 'Projects', icon: FolderKanban },
-      { label: 'Members', icon: Users },
-    ],
-  },
-]
 
 function getWorkspaceInitials(name = '') {
   return name
@@ -177,53 +166,88 @@ export default function Sidebar() {
                 )
               })
             ) : (
-              <p className="task-sidebar__workspace-empty">
-                You haven't joined any workspaces yet.
-              </p>
+              <>
+                <p className="task-sidebar__workspace-empty">
+                  You haven't joined any workspaces yet.
+                </p>
+
+                <NavLink
+                  to="/workspaces"
+                  className="task-sidebar__workspace-create-link"
+                  onClick={() => setIsWorkspaceMenuOpen(false)}
+                >
+                  <Plus size={15} />
+                  Create your first workspace
+                </NavLink>
+              </>
             )}
           </div>
         )}
       </div>
 
       <div className="task-sidebar__navigation">
-        {navigation.map((group) => (
-          <div key={group.title} className="task-sidebar__group">
-            <p className="task-sidebar__group-title">
-              {group.title}
-            </p>
+        <div className="task-sidebar__group">
+          <p className="task-sidebar__group-title">
+            WORKSPACE
+          </p>
 
-            <nav className="task-sidebar__nav-list">
-              {group.items.map((item) => {
-                const Icon = item.icon
+          <nav className="task-sidebar__nav-list">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+            >
+              <LayoutDashboard size={18} />
+              Overview
+            </NavLink>
 
-                return (
-                  <button
-                    type="button"
-                    key={item.label}
-                    className={`task-sidebar__nav-item ${
-                      item.active
-                        ? 'task-sidebar__nav-item--active'
-                        : ''
-                    }`}
-                  >
-                    <Icon size={18} />
-                    {item.label}
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
-        ))}
+            <button
+              type="button"
+              className="task-sidebar__nav-item"
+              disabled
+              title="Task management will be available in a later step."
+            >
+              <CheckSquare size={18} />
+              My Tasks
+            </button>
 
-        <button
-          type="button"
-          className="task-sidebar__nav-item"
-          disabled
-          title="Workspace creation will be available in the workspace management page."
+            <button
+              type="button"
+              className="task-sidebar__nav-item"
+              disabled
+              title="Project management will be available in a later step."
+            >
+              <FolderKanban size={18} />
+              Projects
+            </button>
+
+            <button
+              type="button"
+              className="task-sidebar__nav-item"
+              disabled
+              title="Member management will be available in a later step."
+            >
+              <Users size={18} />
+              Members
+            </button>
+          </nav>
+        </div>
+
+        <NavLink
+          to="/workspaces"
+          className={({ isActive }) =>
+            `task-sidebar__nav-item ${
+              isActive ? 'task-sidebar__nav-item--active' : ''
+            }`
+          }
         >
           <Plus size={18} />
-          Create workspace
-        </button>
+          Manage workspaces
+        </NavLink>
       </div>
 
       <div className="task-sidebar__footer">

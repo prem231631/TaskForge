@@ -1,3 +1,5 @@
+
+import { useState } from 'react'
 import {
   Search,
   Bell,
@@ -6,13 +8,35 @@ import {
   Plus,
   Sun,
   Moon,
+  LogOut,
+  UserRound,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { useTheme } from '../context/useTheme'
+import { useAuth } from '../context/useAuth'
 import './Header.css'
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  const fullName = user?.full_name || user?.name || 'TaskForge User'
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('')
+
+  function handleLogout() {
+    logout()
+    setIsProfileOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="dashboard-header">
@@ -80,29 +104,67 @@ export default function Header() {
 
         <div className="dashboard-header__divider" />
 
-        <button
-          className="dashboard-header__profile"
-          type="button"
-          aria-label="User profile"
-        >
-          <div className="dashboard-header__avatar">
-            PR
-          </div>
+        <div className="dashboard-header__profile-wrapper">
+          <button
+            className="dashboard-header__profile"
+            type="button"
+            aria-label="User profile menu"
+            aria-expanded={isProfileOpen}
+            onClick={() => setIsProfileOpen((previous) => !previous)}
+          >
+            <div className="dashboard-header__avatar">
+              {initials || 'TF'}
+            </div>
 
-          <div className="dashboard-header__profile-info">
-            <p className="dashboard-header__profile-name">
-              Prem Raj
-            </p>
-            <p className="dashboard-header__profile-role">
-              Workspace member
-            </p>
-          </div>
+            <div className="dashboard-header__profile-info">
+              <p className="dashboard-header__profile-name">
+                {fullName}
+              </p>
+              <p className="dashboard-header__profile-role">
+                Workspace member
+              </p>
+            </div>
 
-          <ChevronDown
-            size={15}
-            className="dashboard-header__profile-chevron"
-          />
-        </button>
+            <ChevronDown
+              size={15}
+              className="dashboard-header__profile-chevron"
+            />
+          </button>
+
+          {isProfileOpen && (
+            <div className="dashboard-header__dropdown">
+              <div className="dashboard-header__dropdown-user">
+                <div className="dashboard-header__dropdown-name">
+                  {fullName}
+                </div>
+
+                <div className="dashboard-header__dropdown-email">
+                  {user?.email || ''}
+                </div>
+              </div>
+
+              <div className="dashboard-header__dropdown-divider" />
+
+              <button
+                className="dashboard-header__dropdown-item"
+                type="button"
+                disabled
+              >
+                <UserRound size={17} />
+                Account
+              </button>
+
+              <button
+                className="dashboard-header__dropdown-item dashboard-header__dropdown-logout"
+                type="button"
+                onClick={handleLogout}
+              >
+                <LogOut size={17} />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

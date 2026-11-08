@@ -18,29 +18,23 @@ import { WorkspaceContext } from './workspace-context'
 
 const WORKSPACE_STORAGE_KEY = 'taskforge_selected_workspace'
 
+function getSavedWorkspaceId() {
+  try {
+    return sessionStorage.getItem(WORKSPACE_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
 export function WorkspaceProvider({ children }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const [workspaces, setWorkspaces] = useState([])
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(() => {
-    try {
-      return sessionStorage.getItem(WORKSPACE_STORAGE_KEY)
-    } catch {
-      return null
-    }
-  })
-
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
+    getSavedWorkspaceId,
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-
-  const selectedWorkspace = useMemo(
-    () =>
-      workspaces.find(
-        (workspace) =>
-          String(workspace.id) === String(selectedWorkspaceId),
-      ) || null,
-    [workspaces, selectedWorkspaceId],
-  )
 
   const selectWorkspace = useCallback((workspaceId) => {
     const nextId = workspaceId ? String(workspaceId) : null
@@ -58,10 +52,22 @@ export function WorkspaceProvider({ children }) {
     }
   }, [])
 
+  const visibleWorkspaces = isAuthenticated ? workspaces : []
+
+  const selectedWorkspace = useMemo(
+    () =>
+      visibleWorkspaces.find(
+        (workspace) =>
+          String(workspace.id) === String(selectedWorkspaceId),
+      ) || null,
+    [visibleWorkspaces, selectedWorkspaceId],
+  )
+
   const refreshWorkspaces = useCallback(async () => {
     if (!isAuthenticated) {
       setWorkspaces([])
       selectWorkspace(null)
+      setError(null)
       setIsLoading(false)
       return []
     }
@@ -75,7 +81,8 @@ export function WorkspaceProvider({ children }) {
 
       setWorkspaces(workspaceList)
 
-      const savedId = selectedWorkspaceId
+      const savedId = getSavedWorkspaceId()
+
       const savedWorkspaceExists = workspaceList.some(
         (workspace) => String(workspace.id) === String(savedId),
       )
@@ -96,19 +103,21 @@ export function WorkspaceProvider({ children }) {
     } finally {
       setIsLoading(false)
     }
-  }, [isAuthenticated, selectedWorkspaceId, selectWorkspace])
+  }, [isAuthenticated, selectWorkspace])
 
   useEffect(() => {
     if (isAuthLoading) {
-      return
+      return undefined
     }
 
     if (!isAuthenticated) {
-      setWorkspaces([])
-      selectWorkspace(null)
-      setError(null)
-      setIsLoading(false)
-      return
+      try {
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEY)
+      } catch {
+        // Ignore unavailable session storage.
+      }
+
+      return undefined
     }
 
     let isMounted = true
@@ -127,13 +136,14 @@ export function WorkspaceProvider({ children }) {
 
         setWorkspaces(workspaceList)
 
+        const savedId = getSavedWorkspaceId()
+
         const savedWorkspaceExists = workspaceList.some(
-          (workspace) =>
-            String(workspace.id) === String(selectedWorkspaceId),
+          (workspace) => String(workspace.id) === String(savedId),
         )
 
         const nextWorkspaceId = savedWorkspaceExists
-          ? selectedWorkspaceId
+          ? savedId
           : workspaceList[0]?.id ?? null
 
         setSelectedWorkspaceId(
@@ -171,7 +181,7 @@ export function WorkspaceProvider({ children }) {
     return () => {
       isMounted = false
     }
-  }, [isAuthenticated, isAuthLoading, selectedWorkspaceId, selectWorkspace])
+  }, [isAuthenticated, isAuthLoading])
 
   const createWorkspace = useCallback(
     async (workspaceData) => {
@@ -179,32 +189,44 @@ export function WorkspaceProvider({ children }) {
 
       const newWorkspace = await createWorkspaceRequest(workspaceData)
 
-      setWorkspaces((current) => [newWorkspace, ...current])
+      const workspaceWithRole = {
+        ...newWorkspace,
+        role: 'owner',
+      }
+
+      setWorkspaces((current) => [
+        workspaceWithRole,
+        ...current,
+      ])
+
       selectWorkspace(newWorkspace.id)
 
-      return newWorkspace
+      return workspaceWithRole
     },
     [selectWorkspace],
   )
 
-  const updateWorkspace = useCallback(async (workspaceId, workspaceData) => {
-    setError(null)
+  const updateWorkspace = useCallback(
+    async (workspaceId, workspaceData) => {
+      setError(null)
 
-    const updatedWorkspace = await updateWorkspaceRequest(
-      workspaceId,
-      workspaceData,
-    )
+      const updatedWorkspace = await updateWorkspaceRequest(
+        workspaceId,
+        workspaceData,
+      )
 
-    setWorkspaces((current) =>
-      current.map((workspace) =>
-        workspace.id === workspaceId
-          ? { ...workspace, ...updatedWorkspace }
-          : workspace,
-      ),
-    )
+      setWorkspaces((current) =>
+        current.map((workspace) =>
+          String(workspace.id) === String(workspaceId)
+            ? { ...workspace, ...updatedWorkspace }
+            : workspace,
+        ),
+      )
 
-    return updatedWorkspace
-  }, [])
+      return updatedWorkspace
+    },
+    [],
+  )
 
   const deleteWorkspace = useCallback(
     async (workspaceId) => {
@@ -213,7 +235,8 @@ export function WorkspaceProvider({ children }) {
       await deleteWorkspaceRequest(workspaceId)
 
       const remainingWorkspaces = workspaces.filter(
-        (workspace) => workspace.id !== workspaceId,
+        (workspace) =>
+          String(workspace.id) !== String(workspaceId),
       )
 
       setWorkspaces(remainingWorkspaces)
@@ -227,11 +250,11 @@ export function WorkspaceProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      workspaces,
+      workspaces: visibleWorkspaces,
       selectedWorkspace,
-      selectedWorkspaceId,
-      isLoading,
-      error,
+      selectedWorkspaceId: selectedWorkspace?.id ?? null,
+      isLoading: isAuthLoading || (isAuthenticated && isLoading),
+      error: isAuthenticated ? error : null,
       selectWorkspace,
       refreshWorkspaces,
       createWorkspace,
@@ -239,9 +262,10 @@ export function WorkspaceProvider({ children }) {
       deleteWorkspace,
     }),
     [
-      workspaces,
+      visibleWorkspaces,
       selectedWorkspace,
-      selectedWorkspaceId,
+      isAuthLoading,
+      isAuthenticated,
       isLoading,
       error,
       selectWorkspace,

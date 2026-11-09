@@ -1,0 +1,241 @@
+
+.task-form {
+  width: 100%;
+  max-width: 620px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.task-form__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 27px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-form__eyebrow {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.task-form__heading h2 {
+  margin: 9px 0 0;
+  color: var(--color-text);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.task-form__heading p:last-child {
+  margin: 7px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.task-form__close {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-secondary);
+}
+
+.task-form__close:hover {
+  color: var(--color-text);
+  background: var(--color-background);
+}
+
+.task-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+  padding: 25px 27px;
+}
+
+.task-form__field {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-form__field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.task-form__field label span {
+  color: var(--color-danger);
+}
+
+.task-form__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-muted);
+  background: var(--color-background);
+}
+
+.task-form__input-wrap:focus-within {
+  border-color: var(--color-primary);
+}
+
+.task-form__input-wrap input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  outline: none;
+  color: var(--color-text);
+  background: transparent;
+  font-size: 12px;
+}
+
+.task-form__field input:not(.task-form__input-wrap input),
+.task-form__field select,
+.task-form__field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  outline: none;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-size: 12px;
+}
+
+.task-form__field select {
+  min-height: 43px;
+}
+
+.task-form__field textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+.task-form__field input:focus,
+.task-form__field select:focus,
+.task-form__field textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.task-form__hint {
+  color: var(--color-muted);
+  font-size: 10px;
+}
+
+.task-form__row {
+  display: flex;
+  gap: 15px;
+}
+
+.task-form__error {
+  padding: 11px 13px;
+  border: 1px solid var(--color-danger);
+  border-radius: 9px;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.task-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 17px 27px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
+}
+
+.task-form__cancel,
+.task-form__submit {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.task-form__cancel {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+}
+
+.task-form__cancel:hover {
+  background: var(--color-background);
+}
+
+.task-form__submit {
+  border: none;
+  color: #ffffff;
+  background: var(--color-primary);
+}
+
+.task-form__submit:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.task-form__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.task-form__spinner {
+  animation: task-form-spin 1s linear infinite;
+}
+
+@keyframes task-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .task-form__heading,
+  .task-form__body {
+    padding-right: 19px;
+    padding-left: 19px;
+  }
+
+  .task-form__row {
+    flex-direction: column;
+  }
+
+  .task-form__footer {
+    padding: 15px 19px;
+  }
+}

@@ -205,15 +205,18 @@ export default function Sidebar() {
               Overview
             </NavLink>
 
-            <button
-              type="button"
-              className="task-sidebar__nav-item"
-              disabled
-              title="Task management will be available in a later step."
+            <NavLink
+              to="/tasks"
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+              onClick={() => setIsWorkspaceMenuOpen(false)}
             >
               <CheckSquare size={18} />
               My Tasks
-            </button>
+            </NavLink>
 
             <button
               type="button"

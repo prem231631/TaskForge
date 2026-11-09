@@ -1,8 +1,8 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
+import Members from './pages/Members'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import CheckEmail from './pages/CheckEmail'
@@ -26,6 +26,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/workspaces" element={<Workspaces />} />
+          <Route path="/members" element={<Members />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

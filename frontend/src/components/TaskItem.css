@@ -138,3 +138,51 @@
     padding: 14px 12px;
   }
 }
+
+
+.task-item__actions {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.task-item__menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  right: 0;
+  display: flex;
+  min-width: 150px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.task-item__menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  text-align: left;
+  font-size: 11px;
+}
+
+.task-item__menu button:hover {
+  color: var(--color-text);
+  background: var(--color-surface-secondary);
+}
+
+.task-item__menu .task-item__menu-delete {
+  color: var(--color-danger);
+}
+
+.task-item__menu .task-item__menu-delete:hover {
+  background: var(--color-danger-soft);
+}

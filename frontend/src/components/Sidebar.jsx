@@ -225,15 +225,18 @@ export default function Sidebar() {
               Projects
             </button>
 
-            <button
-              type="button"
-              className="task-sidebar__nav-item"
-              disabled
-              title="Member management will be available in a later step."
+            <NavLink
+              to="/members"
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+              onClick={() => setIsWorkspaceMenuOpen(false)}
             >
               <Users size={18} />
               Members
-            </button>
+            </NavLink>
           </nav>
         </div>
 
@@ -244,6 +247,7 @@ export default function Sidebar() {
               isActive ? 'task-sidebar__nav-item--active' : ''
             }`
           }
+          onClick={() => setIsWorkspaceMenuOpen(false)}
         >
           <Plus size={18} />
           Manage workspaces

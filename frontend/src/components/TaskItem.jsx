@@ -1,9 +1,13 @@
+
+import { useState } from 'react'
 import {
   CalendarDays,
   Circle,
   CircleDot,
   CheckCircle2,
   MoreHorizontal,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 
 import './TaskItem.css'
@@ -32,19 +36,38 @@ const priorityConfig = {
   high: 'task-item__priority--high',
 }
 
-export default function TaskItem({ task }) {
+export default function TaskItem({
+  task,
+  onEdit,
+  onDelete,
+}) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   const status = statusConfig[task.status] || statusConfig.todo
   const StatusIcon = status.icon
 
   const priority =
     priorityConfig[task.priority] || priorityConfig.low
 
+  const hasActions = Boolean(onEdit || onDelete)
+
   const dueDate = task.due_date
-    ? new Date(task.due_date).toLocaleDateString('en', {
+    ? new Date(task.due_date).toLocaleDateString(undefined, {
+        year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
     : 'No due date'
+
+  function handleEdit() {
+    setIsMenuOpen(false)
+    onEdit?.(task)
+  }
+
+  function handleDelete() {
+    setIsMenuOpen(false)
+    onDelete?.(task)
+  }
 
   return (
     <div className="task-item">
@@ -76,13 +99,49 @@ export default function TaskItem({ task }) {
         {status.label}
       </span>
 
-      <button
-        className="task-item__more"
-        type="button"
-        aria-label={`More options for ${task.title}`}
-      >
-        <MoreHorizontal size={18} />
-      </button>
+      {hasActions && (
+        <div className="task-item__actions">
+          <button
+            className="task-item__more"
+            type="button"
+            onClick={() =>
+              setIsMenuOpen((current) => !current)
+            }
+            aria-label={`More options for ${task.title}`}
+            aria-expanded={isMenuOpen}
+            aria-haspopup="menu"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+
+          {isMenuOpen && (
+            <div className="task-item__menu" role="menu">
+              {onEdit && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleEdit}
+                >
+                  <Pencil size={14} />
+                  Edit task
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="task-item__menu-delete"
+                  onClick={handleDelete}
+                >
+                  <Trash2 size={14} />
+                  Delete task
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

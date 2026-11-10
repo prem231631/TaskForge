@@ -68,7 +68,7 @@ async function getUpcomingTasks(workspaceId) {
   today.setHours(0, 0, 0, 0)
 
   let offset = 0
-  let total = 0
+  let total
 
   while (upcomingTasks.length < UPCOMING_TASK_LIMIT) {
     const response = await getTasks(workspaceId, {

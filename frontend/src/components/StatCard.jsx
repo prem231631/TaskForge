@@ -1,3 +1,4 @@
+
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -32,21 +33,23 @@ export default function StatCard({
       </div>
 
       <div className="stat-card__bottom">
-        <span
-          className={`stat-card__change ${
-            positive
-              ? 'stat-card__change--positive'
-              : 'stat-card__change--negative'
-          }`}
-        >
-          {positive ? (
-            <ArrowUpRight size={13} />
-          ) : (
-            <ArrowDownRight size={13} />
-          )}
+        {change && (
+          <span
+            className={`stat-card__change ${
+              positive
+                ? 'stat-card__change--positive'
+                : 'stat-card__change--negative'
+            }`}
+          >
+            {positive ? (
+              <ArrowUpRight size={13} />
+            ) : (
+              <ArrowDownRight size={13} />
+            )}
 
-          {change}
-        </span>
+            {change}
+          </span>
+        )}
 
         <span className="stat-card__description">
           {description}

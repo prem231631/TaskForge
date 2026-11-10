@@ -5,8 +5,8 @@ import {
   ClipboardList,
   Flag,
   LoaderCircle,
-  UserRound,
   X,
+  UserRound,
 } from 'lucide-react'
 
 import './TaskForm.css'

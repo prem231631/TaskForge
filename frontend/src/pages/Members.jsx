@@ -9,7 +9,6 @@ import {
   UserPlus,
   Users,
   UserX,
-  X,
 } from 'lucide-react'
 
 import DashboardLayout from '../layouts/DashboardLayout'

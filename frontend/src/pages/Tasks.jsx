@@ -5,7 +5,6 @@ import {
   AlertCircle,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
-  Check,
   ClipboardList,
   Filter,
   LoaderCircle,
@@ -60,7 +59,6 @@ function getRequestError(error, fallback) {
 
 export default function Tasks() {
   const { selectedWorkspace } = useWorkspace()
-
   const workspaceId = selectedWorkspace?.id
 
   const [tasks, setTasks] = useState([])
@@ -154,11 +152,33 @@ export default function Tasks() {
   }, [workspaceId])
 
   useEffect(() => {
-    loadTasks()
+    let isActive = true
+
+    const timer = setTimeout(() => {
+      if (isActive) {
+        loadTasks()
+      }
+    }, 0)
+
+    return () => {
+      isActive = false
+      clearTimeout(timer)
+    }
   }, [loadTasks])
 
   useEffect(() => {
-    loadMembers()
+    let isActive = true
+
+    const timer = setTimeout(() => {
+      if (isActive) {
+        loadMembers()
+      }
+    }, 0)
+
+    return () => {
+      isActive = false
+      clearTimeout(timer)
+    }
   }, [loadMembers])
 
   function openCreateForm() {
@@ -591,6 +611,7 @@ export default function Tasks() {
               aria-label={editingTask ? 'Edit task' : 'Create task'}
             >
               <TaskForm
+                key={editingTask?.id ?? 'new-task'}
                 members={members}
                 initialTask={editingTask}
                 onSubmit={handleSubmit}

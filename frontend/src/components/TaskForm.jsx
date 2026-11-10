@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   CalendarDays,
   ClipboardList,
@@ -49,10 +49,6 @@ export default function TaskForm({
   const [formData, setFormData] = useState(() =>
     getInitialFormData(initialTask),
   )
-
-  useEffect(() => {
-    setFormData(getInitialFormData(initialTask))
-  }, [initialTask])
 
   function handleChange(event) {
     const { name, value } = event.target

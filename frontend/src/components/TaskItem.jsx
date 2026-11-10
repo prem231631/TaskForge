@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 
 import './TaskItem.css'
@@ -38,6 +39,7 @@ const priorityConfig = {
 
 export default function TaskItem({
   task,
+  members = [],
   onEdit,
   onDelete,
 }) {
@@ -50,6 +52,14 @@ export default function TaskItem({
     priorityConfig[task.priority] || priorityConfig.low
 
   const hasActions = Boolean(onEdit || onDelete)
+
+  const assignedMember = task.assigned_to_id
+    ? members.find(
+        (member) => Number(member.user_id) === Number(task.assigned_to_id),
+      )
+    : null
+
+  const assigneeName = assignedMember?.full_name || null
 
   const dueDate = task.due_date
     ? new Date(task.due_date).toLocaleDateString(undefined, {
@@ -90,6 +100,11 @@ export default function TaskItem({
         {task.priority || 'low'}
       </span>
 
+      <div className="task-item__assignee" title={assigneeName || 'Unassigned'}>
+        <UserRound size={14} />
+        <span>{assigneeName || 'Unassigned'}</span>
+      </div>
+
       <div className="task-item__due-date">
         <CalendarDays size={14} />
         {dueDate}
@@ -104,9 +119,7 @@ export default function TaskItem({
           <button
             className="task-item__more"
             type="button"
-            onClick={() =>
-              setIsMenuOpen((current) => !current)
-            }
+            onClick={() => setIsMenuOpen((current) => !current)}
             aria-label={`More options for ${task.title}`}
             aria-expanded={isMenuOpen}
             aria-haspopup="menu"

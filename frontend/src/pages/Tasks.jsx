@@ -553,6 +553,7 @@ export default function Tasks() {
                       <TaskItem
                         key={task.id}
                         task={task}
+                        members={members}
                         onEdit={openEditForm}
                         onDelete={openDeleteConfirmation}
                       />

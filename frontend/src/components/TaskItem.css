@@ -207,3 +207,14 @@
     padding: 14px 12px;
   }
 }
+
+.task-item__title-link {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  text-decoration: none;
+}
+
+.task-item__title-link:hover .task-item__title {
+  color: var(--color-primary);
+}

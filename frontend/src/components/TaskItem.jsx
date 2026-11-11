@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   Circle,
@@ -87,9 +88,15 @@ export default function TaskItem({
       />
 
       <div className="task-item__details">
-        <p className="task-item__title">
-          {task.title}
-        </p>
+        <Link
+          to={`/tasks/${task.id}`}
+          className="task-item__title-link"
+          title={`View details for ${task.title}`}
+        >
+          <p className="task-item__title">
+            {task.title}
+          </p>
+        </Link>
 
         <p className="task-item__description">
           {task.description || 'No description provided'}

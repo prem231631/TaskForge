@@ -1,7 +1,13 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+)
 
 
 class UserCreate(BaseModel):
@@ -13,6 +19,23 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def validate_full_name(cls, value):
+        if not isinstance(value, str):
+            return value
+
+        value = value.strip()
+
+        if len(value) < 2:
+            raise ValueError("Full name must contain at least 2 characters.")
+
+        return value
 
 
 class UserResponse(BaseModel):

@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -9,6 +10,7 @@ import {
   getCurrentUser,
   loginUser,
   registerUser,
+  updateCurrentUser,
 } from '../api/auth'
 
 import { AuthContext } from './auth-context'
@@ -46,6 +48,12 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (userData) => {
     return registerUser(userData)
+  }, [])
+
+  const updateProfile = useCallback(async (profileData) => {
+    const updatedUser = await updateCurrentUser(profileData)
+    setUser(updatedUser)
+    return updatedUser
   }, [])
 
   useEffect(() => {
@@ -95,8 +103,16 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      updateProfile,
     }),
-    [user, isLoading, login, register, logout],
+    [
+      user,
+      isLoading,
+      login,
+      register,
+      logout,
+      updateProfile,
+    ],
   )
 
   return (

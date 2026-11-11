@@ -6,6 +6,7 @@ import Workspaces from './pages/Workspaces'
 import Members from './pages/Members'
 import Tasks from './pages/Tasks'
 import TaskDetails from './pages/TaskDetails'
+import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import CheckEmail from './pages/CheckEmail'
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/members" element={<Members />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/tasks/:taskId" element={<TaskDetails />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -25,6 +25,7 @@ export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   const fullName = user?.full_name || user?.name || 'TaskForge User'
+
   const initials = fullName
     .split(' ')
     .filter(Boolean)
@@ -36,6 +37,11 @@ export default function Header() {
     logout()
     setIsProfileOpen(false)
     navigate('/login', { replace: true })
+  }
+
+  function handleAccount() {
+    setIsProfileOpen(false)
+    navigate('/profile')
   }
 
   return (
@@ -120,6 +126,7 @@ export default function Header() {
               <p className="dashboard-header__profile-name">
                 {fullName}
               </p>
+
               <p className="dashboard-header__profile-role">
                 Workspace member
               </p>
@@ -148,7 +155,7 @@ export default function Header() {
               <button
                 className="dashboard-header__dropdown-item"
                 type="button"
-                disabled
+                onClick={handleAccount}
               >
                 <UserRound size={17} />
                 Account

@@ -18,6 +18,7 @@ from app.schemas.user import (
     TokenResponse,
     UserCreate,
     UserLogin,
+    UserProfileUpdate,
     UserResponse,
     VerifyEmailRequest,
 )
@@ -53,7 +54,11 @@ The account cannot log in until its email address is verified.
 """,
     responses={
         409: {"description": "An account with this email already exists."},
-        503: {"description": "The account was created but email delivery failed."},
+        503: {
+            "description": (
+                "The account was created but email delivery failed."
+            )
+        },
         429: {"description": "Registration rate limit exceeded."},
     },
 )
@@ -112,7 +117,9 @@ def register(
         "Verify an account using the single-use token sent to its email address."
     ),
     responses={
-        400: {"description": "The verification token is invalid or expired."},
+        400: {
+            "description": "The verification token is invalid or expired."
+        },
         429: {"description": "Verification rate limit exceeded."},
     },
 )
@@ -131,8 +138,10 @@ def verify_email(
         )
 
     return MessageResponse(
-        message="Your email address has been verified successfully. "
-        "You can now log in."
+        message=(
+            "Your email address has been verified successfully. "
+            "You can now log in."
+        )
     )
 
 
@@ -167,9 +176,7 @@ def resend_verification(
             )
 
         except RuntimeError:
-            logger.warning(
-                "Verification email resend failed."
-            )
+            logger.warning("Verification email resend failed.")
 
     return MessageResponse(
         message=(
@@ -190,7 +197,9 @@ A successful login returns a bearer access token.
 """,
     responses={
         401: {
-            "description": "Invalid credentials, inactive account, or unverified email."
+            "description": (
+                "Invalid credentials, inactive account, or unverified email."
+            )
         },
         429: {"description": "Login rate limit exceeded."},
     },
@@ -260,9 +269,40 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
     description="Retrieve the profile of the authenticated user.",
     responses={
         401: {
-            "description": "Missing, invalid, or expired authentication token."
+            "description": (
+                "Missing, invalid, or expired authentication token."
+            )
         },
     },
 )
 def read_current_user(current_user: CurrentUser) -> User:
+    return current_user
+
+
+@router.patch(
+    "/me",
+    response_model=UserResponse,
+    summary="Update the current user's profile",
+    description=(
+        "Update the full name of the authenticated user."
+    ),
+    responses={
+        401: {
+            "description": (
+                "Missing, invalid, or expired authentication token."
+            )
+        },
+        422: {"description": "Invalid profile information."},
+    },
+)
+def update_current_user(
+    payload: UserProfileUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> User:
+    current_user.full_name = payload.full_name
+
+    db.commit()
+    db.refresh(current_user)
+
     return current_user

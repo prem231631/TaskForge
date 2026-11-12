@@ -1,5 +1,6 @@
+
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Zap,
   Mail,
@@ -8,6 +9,7 @@ import {
   EyeOff,
   ArrowRight,
   LoaderCircle,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { useAuth } from '../context/useAuth'
@@ -15,6 +17,7 @@ import './Login.css'
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
 
   const [formData, setFormData] = useState({
@@ -25,6 +28,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const passwordChanged = location.state?.passwordChanged === true
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -90,6 +95,16 @@ export default function Login() {
             <h2>Welcome back</h2>
             <p>Sign in to continue to your workspace.</p>
           </div>
+
+          {passwordChanged && (
+            <div className="auth-success" role="status">
+              <CheckCircle2 size={18} />
+              <span>
+                Your password has been changed successfully.
+                Please sign in with your new password.
+              </span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="auth-field">

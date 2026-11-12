@@ -36,3 +36,12 @@ export async function updateCurrentUser(profileData) {
   const response = await apiClient.patch('/auth/me', profileData)
   return response.data
 }
+
+export async function changeCurrentUserPassword(passwordData) {
+  const response = await apiClient.post(
+    '/auth/change-password',
+    passwordData,
+  )
+
+  return response.data
+}

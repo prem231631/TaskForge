@@ -263,10 +263,18 @@ export default function Sidebar() {
           Help & Support
         </button>
 
-        <button type="button" className="task-sidebar__nav-item">
+        <NavLink
+          to="/security"
+          className={({ isActive }) =>
+            `task-sidebar__nav-item ${
+              isActive ? 'task-sidebar__nav-item--active' : ''
+            }`
+          }
+          onClick={() => setIsWorkspaceMenuOpen(false)}
+        >
           <Settings size={18} />
-          Settings
-        </button>
+          Password & Security
+        </NavLink>
       </div>
     </aside>
   )

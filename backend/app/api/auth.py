@@ -8,7 +8,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.rate_limiter import limiter
-from app.core.security import create_access_token, decode_access_token
+from app.core.security import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 from app.db.dependencies import get_db
 from app.models import User
 from app.schemas.user import (
@@ -18,6 +23,7 @@ from app.schemas.user import (
     TokenResponse,
     UserCreate,
     UserLogin,
+    UserPasswordChange,
     UserProfileUpdate,
     UserResponse,
     VerifyEmailRequest,
@@ -226,7 +232,10 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(subject=str(user.id))
+    access_token = create_access_token(
+        subject=str(user.id),
+        token_version=user.token_version,
+    )
 
     return TokenResponse(access_token=access_token)
 
@@ -244,8 +253,14 @@ def get_current_user(
     try:
         payload = decode_access_token(token)
         subject = payload.get("sub")
+        token_version = payload.get("ver", 0)
 
-        if not isinstance(subject, str) or not subject.isdigit():
+        if (
+            not isinstance(subject, str)
+            or not subject.isdigit()
+            or type(token_version) is not int
+            or token_version < 0
+        ):
             raise unauthorized
 
     except (jwt.InvalidTokenError, ValueError) as exc:
@@ -253,7 +268,12 @@ def get_current_user(
 
     user = db.get(User, int(subject))
 
-    if user is None or not user.is_active or not user.is_verified:
+    if (
+        user is None
+        or not user.is_active
+        or not user.is_verified
+        or token_version != user.token_version
+    ):
         raise unauthorized
 
     return user
@@ -306,3 +326,61 @@ def update_current_user(
     db.refresh(current_user)
 
     return current_user
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+    summary="Change the current user's password",
+    description=(
+        "Change the password after verifying the current password. "
+        "All existing access tokens are invalidated."
+    ),
+    responses={
+        400: {
+            "description": (
+                "The current password is incorrect or the new password "
+                "matches the current password."
+            )
+        },
+        401: {"description": "Authentication is required."},
+        429: {"description": "Password change rate limit exceeded."},
+        422: {"description": "Invalid password information."},
+    },
+)
+@limiter.limit("5/hour")
+def change_password(
+    request: Request,
+    payload: UserPasswordChange,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> MessageResponse:
+    if not verify_password(
+        payload.current_password,
+        current_user.hashed_password,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The current password is incorrect.",
+        )
+
+    if verify_password(
+        payload.new_password,
+        current_user.hashed_password,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The new password must be different from the current password.",
+        )
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    current_user.token_version += 1
+
+    db.commit()
+
+    return MessageResponse(
+        message=(
+            "Password changed successfully. "
+            "Please log in again with your new password."
+        )
+    )

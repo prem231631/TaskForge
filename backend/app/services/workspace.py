@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models import User, Workspace, WorkspaceMembership
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate
+from app.services.notification import create_notification
 
 
 def create_workspace(
@@ -123,6 +124,7 @@ def add_workspace_member(
     db: Session,
     workspace_id: int,
     email: str,
+    actor: User,
 ) -> WorkspaceMembership:
     normalized_email = email.strip().lower()
 
@@ -142,6 +144,11 @@ def add_workspace_member(
     if existing_membership is not None:
         raise ValueError("This user is already a workspace member.")
 
+    workspace = db.get(Workspace, workspace_id)
+
+    if workspace is None:
+        raise ValueError("Workspace not found.")
+
     membership = WorkspaceMembership(
         workspace_id=workspace_id,
         user_id=user.id,
@@ -150,6 +157,20 @@ def add_workspace_member(
 
     try:
         db.add(membership)
+
+        create_notification(
+            db,
+            recipient_id=user.id,
+            actor_id=actor.id,
+            workspace_id=workspace.id,
+            notification_type="workspace_member_added",
+            title="Added to a workspace",
+            message=(
+                f"{actor.full_name} added you to "
+                f"the workspace '{workspace.name}'."
+            ),
+        )
+
         db.commit()
         db.refresh(membership)
     except IntegrityError as exc:
@@ -157,6 +178,9 @@ def add_workspace_member(
         raise ValueError(
             "This user is already a workspace member."
         ) from exc
+    except Exception:
+        db.rollback()
+        raise
 
     return membership
 

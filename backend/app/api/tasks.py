@@ -242,7 +242,7 @@ def get_task_endpoint(
     description="""
 Update an existing task within a workspace.
 
-The authenticated user must be a workspace member.
+The authenticated user must be a member of the workspace.
 
 Only the fields provided in the request are updated.
 
@@ -273,7 +273,13 @@ def update_task_endpoint(
     require_workspace_membership(db, workspace_id, current_user)
 
     try:
-        task = update_task(db, workspace_id, task_id, payload)
+        task = update_task(
+            db,
+            workspace_id,
+            task_id,
+            payload,
+            current_user,
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -302,7 +308,7 @@ def update_task_endpoint(
     description="""
 Permanently delete a task from a workspace.
 
-The authenticated user must be a workspace member.
+The authenticated user must be a member of the workspace.
 
 A successful deletion returns HTTP 204 with no response body.
 """,

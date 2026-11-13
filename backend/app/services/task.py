@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Task, User, Workspace, WorkspaceMembership
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services.notification import create_notification
 
 
 def _is_workspace_member(
@@ -68,6 +69,26 @@ def create_task(
 
     try:
         db.add(task)
+        db.flush()
+
+        if (
+            task.assigned_to_id is not None
+            and task.assigned_to_id != creator.id
+        ):
+            create_notification(
+                db,
+                recipient_id=task.assigned_to_id,
+                actor_id=creator.id,
+                workspace_id=workspace_id,
+                task_id=task.id,
+                notification_type="task_assigned",
+                title="Task assigned to you",
+                message=(
+                    f"{creator.full_name} assigned you the task "
+                    f"'{task.title}' in '{workspace.name}'."
+                ),
+            )
+
         db.commit()
         db.refresh(task)
     except Exception:
@@ -150,6 +171,7 @@ def update_task(
     workspace_id: int,
     task_id: int,
     task_data: TaskUpdate,
+    actor: User,
 ) -> Task | None:
     task = get_workspace_task(db, workspace_id, task_id)
 
@@ -171,9 +193,72 @@ def update_task(
             updates["assigned_to_id"],
         )
 
+    previous_assignee_id = task.assigned_to_id
+    assignment_changed = (
+        "assigned_to_id" in updates
+        and updates["assigned_to_id"] != previous_assignee_id
+    )
+
     try:
         for field, value in updates.items():
             setattr(task, field, value)
+
+        db.flush()
+
+        workspace = db.get(Workspace, workspace_id)
+
+        notified_user_ids: set[int] = set()
+
+        if (
+            assignment_changed
+            and task.assigned_to_id is not None
+            and task.assigned_to_id != actor.id
+        ):
+            create_notification(
+                db,
+                recipient_id=task.assigned_to_id,
+                actor_id=actor.id,
+                workspace_id=workspace_id,
+                task_id=task.id,
+                notification_type="task_assigned",
+                title="Task assigned to you",
+                message=(
+                    f"{actor.full_name} assigned you the task "
+                    f"'{task.title}' in '{workspace.name}'."
+                ),
+            )
+            notified_user_ids.add(task.assigned_to_id)
+
+        if assignment_changed and previous_assignee_id is not None:
+            if (
+                previous_assignee_id != actor.id
+                and previous_assignee_id != task.assigned_to_id
+            ):
+                notified_user_ids.add(previous_assignee_id)
+
+        notification_recipient_ids = {
+            task.created_by_id,
+            task.assigned_to_id,
+        }
+
+        notification_recipient_ids.discard(None)
+        notification_recipient_ids.discard(actor.id)
+        notification_recipient_ids.difference_update(notified_user_ids)
+
+        for recipient_id in notification_recipient_ids:
+            create_notification(
+                db,
+                recipient_id=recipient_id,
+                actor_id=actor.id,
+                workspace_id=workspace_id,
+                task_id=task.id,
+                notification_type="task_updated",
+                title="Task updated",
+                message=(
+                    f"{actor.full_name} updated the task "
+                    f"'{task.title}' in '{workspace.name}'."
+                ),
+            )
 
         db.commit()
         db.refresh(task)

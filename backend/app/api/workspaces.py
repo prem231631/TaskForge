@@ -67,7 +67,6 @@ The authenticated user becomes the workspace owner.
 **Requirements:**
 - Workspace name must contain 2–120 characters.
 - Description is optional and supports up to 500 characters.
-
 """,
     responses={
         401: {"description": "Authentication required."},
@@ -329,6 +328,7 @@ def add_workspace_member_endpoint(
             db,
             workspace_id,
             str(payload.email),
+            current_user,
         )
     except ValueError as exc:
         raise HTTPException(

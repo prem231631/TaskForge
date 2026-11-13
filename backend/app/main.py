@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.notifications import router as notifications_router
 from app.api.tasks import router as tasks_router
 from app.api.workspaces import router as workspaces_router
 from app.core.config import get_settings
@@ -37,8 +38,9 @@ tags_metadata = [
     {
         "name": "Authentication",
         "description": (
-            "User registration, login, and authenticated account information. "
-            "Use the access token returned by login to authorize protected requests."
+            "User registration, login, and authenticated account "
+            "information. Use the access token returned by login "
+            "to authorize protected requests."
         ),
     },
     {
@@ -56,6 +58,13 @@ tags_metadata = [
             "tasks within workspaces. Workspace membership is required."
         ),
     },
+    {
+        "name": "Notifications",
+        "description": (
+            "View personal notifications, check unread counts, and "
+            "manage notification read status."
+        ),
+    },
 ]
 
 
@@ -70,6 +79,7 @@ TaskForge is a team collaboration and task management platform.
 - **Workspaces:** Create workspaces and manage workspace members.
 - **Task management:** Create, update, retrieve, and delete workspace tasks.
 - **Task organization:** Filter, sort, and paginate task lists.
+- **Notifications:** View notifications and manage read status.
 
 ## Authentication
 
@@ -211,6 +221,7 @@ async def log_http_requests(
 app.include_router(auth_router)
 app.include_router(workspaces_router)
 app.include_router(tasks_router)
+app.include_router(notifications_router)
 
 
 @app.get("/", tags=["Health"])

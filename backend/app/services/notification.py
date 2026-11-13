@@ -7,6 +7,32 @@ from sqlalchemy.orm import Session
 from app.models.notification import Notification
 
 
+def create_notification(
+    db: Session,
+    *,
+    recipient_id: int,
+    notification_type: str,
+    title: str,
+    message: str,
+    actor_id: int | None = None,
+    workspace_id: int | None = None,
+    task_id: int | None = None,
+) -> Notification:
+    notification = Notification(
+        recipient_id=recipient_id,
+        actor_id=actor_id,
+        workspace_id=workspace_id,
+        task_id=task_id,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+    )
+
+    db.add(notification)
+
+    return notification
+
+
 def list_user_notifications(
     db: Session,
     recipient_id: int,

@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -129,17 +130,7 @@ export function NotificationProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (isAuthLoading) {
-      return undefined
-    }
-
-    if (!isAuthenticated) {
-      setNotifications([])
-      setTotal(0)
-      setUnreadCount(0)
-      setError(null)
-      setIsLoading(false)
-
+    if (isAuthLoading || !isAuthenticated) {
       return undefined
     }
 
@@ -184,10 +175,10 @@ export function NotificationProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      notifications,
-      total,
-      unreadCount,
-      isLoading: isAuthLoading || isLoading,
+      notifications: isAuthenticated ? notifications : [],
+      total: isAuthenticated ? total : 0,
+      unreadCount: isAuthenticated ? unreadCount : 0,
+      isLoading: isAuthLoading || (isAuthenticated && isLoading),
       error: isAuthenticated ? error : null,
       refreshNotifications,
       refreshUnreadCount,
@@ -199,8 +190,8 @@ export function NotificationProvider({ children }) {
       total,
       unreadCount,
       isAuthLoading,
-      isLoading,
       isAuthenticated,
+      isLoading,
       error,
       refreshNotifications,
       refreshUnreadCount,

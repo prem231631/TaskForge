@@ -13,6 +13,7 @@ import {
   Check,
   Zap,
   CircleHelp,
+  Bell,
 } from 'lucide-react'
 
 import { useWorkspace } from '../context/useWorkspace'
@@ -40,6 +41,10 @@ export default function Sidebar() {
 
   function handleWorkspaceSelect(workspaceId) {
     selectWorkspace(workspaceId)
+    setIsWorkspaceMenuOpen(false)
+  }
+
+  function closeWorkspaceMenu() {
     setIsWorkspaceMenuOpen(false)
   }
 
@@ -174,7 +179,7 @@ export default function Sidebar() {
                 <NavLink
                   to="/workspaces"
                   className="task-sidebar__workspace-create-link"
-                  onClick={() => setIsWorkspaceMenuOpen(false)}
+                  onClick={closeWorkspaceMenu}
                 >
                   <Plus size={15} />
                   Create your first workspace
@@ -200,6 +205,7 @@ export default function Sidebar() {
                   isActive ? 'task-sidebar__nav-item--active' : ''
                 }`
               }
+              onClick={closeWorkspaceMenu}
             >
               <LayoutDashboard size={18} />
               Overview
@@ -212,10 +218,23 @@ export default function Sidebar() {
                   isActive ? 'task-sidebar__nav-item--active' : ''
                 }`
               }
-              onClick={() => setIsWorkspaceMenuOpen(false)}
+              onClick={closeWorkspaceMenu}
             >
               <CheckSquare size={18} />
               My Tasks
+            </NavLink>
+
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+              onClick={closeWorkspaceMenu}
+            >
+              <Bell size={18} />
+              Notifications
             </NavLink>
 
             <button
@@ -235,7 +254,7 @@ export default function Sidebar() {
                   isActive ? 'task-sidebar__nav-item--active' : ''
                 }`
               }
-              onClick={() => setIsWorkspaceMenuOpen(false)}
+              onClick={closeWorkspaceMenu}
             >
               <Users size={18} />
               Members
@@ -250,7 +269,7 @@ export default function Sidebar() {
               isActive ? 'task-sidebar__nav-item--active' : ''
             }`
           }
-          onClick={() => setIsWorkspaceMenuOpen(false)}
+          onClick={closeWorkspaceMenu}
         >
           <Plus size={18} />
           Manage workspaces
@@ -270,7 +289,7 @@ export default function Sidebar() {
               isActive ? 'task-sidebar__nav-item--active' : ''
             }`
           }
-          onClick={() => setIsWorkspaceMenuOpen(false)}
+          onClick={closeWorkspaceMenu}
         >
           <Settings size={18} />
           Password & Security

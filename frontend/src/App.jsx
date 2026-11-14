@@ -6,6 +6,7 @@ import Workspaces from './pages/Workspaces'
 import Members from './pages/Members'
 import Tasks from './pages/Tasks'
 import TaskDetails from './pages/TaskDetails'
+import Notifications from './pages/Notifications'
 import Profile from './pages/Profile'
 import PasswordSecurity from './pages/PasswordSecurity'
 import Login from './pages/Login'
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/members" element={<Members />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/tasks/:taskId" element={<TaskDetails />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/security" element={<PasswordSecurity />} />
         </Route>

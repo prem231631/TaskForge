@@ -8,14 +8,17 @@ import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { WorkspaceProvider } from './context/WorkspaceContext.jsx'
+import { NotificationProvider } from './context/NotificationContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <WorkspaceProvider>
-          <App />
-        </WorkspaceProvider>
+        <NotificationProvider>
+          <WorkspaceProvider>
+            <App />
+          </WorkspaceProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,

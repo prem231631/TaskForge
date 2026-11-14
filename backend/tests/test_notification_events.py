@@ -108,6 +108,18 @@ def get_notifications(
     return response.json()["items"]
 
 
+def get_task_notifications(
+    client: TestClient,
+    token: str,
+    task_id: int,
+) -> list[dict]:
+    return [
+        item
+        for item in get_notifications(client, token)
+        if item["task_id"] == task_id
+    ]
+
+
 def test_adding_workspace_member_creates_notification(
     client: TestClient,
 ):
@@ -159,27 +171,30 @@ def test_task_assignment_creates_notification_for_assignee(
         "event-assignment-member@example.com",
     )
 
+    assignee_id = client.get(
+        "/auth/me",
+        headers=auth_headers(assignee_token),
+    ).json()["id"]
+
     task = create_task(
         client,
         owner_token,
         workspace["id"],
         {
             "title": "Prepare project documentation",
-            "assigned_to_id": (
-                client.get(
-                    "/auth/me",
-                    headers=auth_headers(assignee_token),
-                ).json()["id"]
-            ),
+            "assigned_to_id": assignee_id,
         },
     )
 
-    notifications = get_notifications(client, assignee_token)
+    task_notifications = get_task_notifications(
+        client,
+        assignee_token,
+        task["id"],
+    )
 
-    assert len(notifications) == 1
-    assert notifications[0]["notification_type"] == "task_assigned"
-    assert notifications[0]["task_id"] == task["id"]
-    assert notifications[0]["workspace_id"] == workspace["id"]
+    assert len(task_notifications) == 1
+    assert task_notifications[0]["notification_type"] == "task_assigned"
+    assert task_notifications[0]["workspace_id"] == workspace["id"]
 
 
 def test_task_update_notifies_creator_and_assignee_only(
@@ -236,26 +251,33 @@ def test_task_update_notifies_creator_and_assignee_only(
 
     assert update.status_code == 200
 
-    creator_notifications = get_notifications(client, creator_token)
-    assignee_notifications = get_notifications(client, assignee_token)
-    owner_notifications = get_notifications(client, owner_token)
+    creator_notifications = get_task_notifications(
+        client,
+        creator_token,
+        task["id"],
+    )
+    assignee_notifications = get_task_notifications(
+        client,
+        assignee_token,
+        task["id"],
+    )
+    owner_notifications = get_task_notifications(
+        client,
+        owner_token,
+        task["id"],
+    )
 
     assert any(
         item["notification_type"] == "task_updated"
-        and item["task_id"] == task["id"]
         for item in creator_notifications
     )
 
     assert any(
         item["notification_type"] == "task_updated"
-        and item["task_id"] == task["id"]
         for item in assignee_notifications
     )
 
-    assert not any(
-        item["task_id"] == task["id"]
-        for item in owner_notifications
-    )
+    assert owner_notifications == []
 
 
 def test_reassignment_notifies_new_assignee_without_duplicate(
@@ -309,6 +331,23 @@ def test_reassignment_notifies_new_assignee_without_duplicate(
         },
     )
 
+    first_notifications_before = get_task_notifications(
+        client,
+        first_token,
+        task["id"],
+    )
+
+    assert len(first_notifications_before) == 1
+    assert first_notifications_before[0]["notification_type"] == "task_assigned"
+
+    second_notifications_before = get_task_notifications(
+        client,
+        second_token,
+        task["id"],
+    )
+
+    assert second_notifications_before == []
+
     response = client.patch(
         f"/workspaces/{workspace['id']}/tasks/{task['id']}",
         headers=auth_headers(owner_token),
@@ -317,20 +356,19 @@ def test_reassignment_notifies_new_assignee_without_duplicate(
 
     assert response.status_code == 200
 
-    second_notifications = get_notifications(client, second_token)
-
-    task_notifications = [
-        item
-        for item in second_notifications
-        if item["task_id"] == task["id"]
-    ]
-
-    assert len(task_notifications) == 1
-    assert task_notifications[0]["notification_type"] == "task_assigned"
-
-    first_notifications = get_notifications(client, first_token)
-
-    assert not any(
-        item["task_id"] == task["id"]
-        for item in first_notifications
+    second_notifications_after = get_task_notifications(
+        client,
+        second_token,
+        task["id"],
     )
+
+    assert len(second_notifications_after) == 1
+    assert second_notifications_after[0]["notification_type"] == "task_assigned"
+
+    first_notifications_after = get_task_notifications(
+        client,
+        first_token,
+        task["id"],
+    )
+
+    assert len(first_notifications_after) == len(first_notifications_before)

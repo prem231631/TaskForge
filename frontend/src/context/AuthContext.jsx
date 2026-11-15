@@ -13,16 +13,20 @@ import {
   updateCurrentUser,
 } from '../api/auth'
 
-import { AuthContext } from './auth-context'
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from '../api/client'
 
-const TOKEN_KEY = 'taskforge_access_token'
+import { AuthContext } from './auth-context'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(TOKEN_KEY)
+    clearAccessToken()
     setUser(null)
   }, [])
 
@@ -33,14 +37,14 @@ export function AuthProvider({ children }) {
       throw new Error('The server did not return an access token.')
     }
 
-    sessionStorage.setItem(TOKEN_KEY, data.access_token)
+    setAccessToken(data.access_token)
 
     try {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       return currentUser
     } catch (error) {
-      sessionStorage.removeItem(TOKEN_KEY)
+      clearAccessToken()
       setUser(null)
       throw error
     }
@@ -60,7 +64,7 @@ export function AuthProvider({ children }) {
     let isMounted = true
 
     async function restoreSession() {
-      const token = sessionStorage.getItem(TOKEN_KEY)
+      const token = getAccessToken()
 
       if (!token) {
         if (isMounted) {
@@ -76,7 +80,7 @@ export function AuthProvider({ children }) {
           setUser(currentUser)
         }
       } catch {
-        sessionStorage.removeItem(TOKEN_KEY)
+        clearAccessToken()
 
         if (isMounted) {
           setUser(null)

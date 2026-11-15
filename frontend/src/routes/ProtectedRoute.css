@@ -1,0 +1,37 @@
+
+.protected-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.protected-loading__brand {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--color-primary);
+  border-radius: 13px;
+}
+
+.protected-loading__spinner {
+  margin-top: 24px;
+  color: var(--color-primary);
+  animation: protected-loading-spin 0.9s linear infinite;
+}
+
+.protected-loading p {
+  margin-top: 13px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+@keyframes protected-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

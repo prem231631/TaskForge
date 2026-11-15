@@ -57,7 +57,7 @@ export default function Login() {
         password: formData.password,
       })
 
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       const status = err.response?.status
 
@@ -79,7 +79,7 @@ export default function Login() {
   return (
     <main className="auth-page">
       <div className="auth-container">
-        <Link to="/login" className="auth-brand">
+        <Link to="/" className="auth-brand">
           <div className="auth-brand-icon">
             <Zap size={24} fill="white" />
           </div>

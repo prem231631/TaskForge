@@ -1,6 +1,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
+import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
 import Members from './pages/Members'
@@ -21,6 +22,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Home />} />
+
         <Route element={<GuestRoute />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -30,7 +33,7 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/members" element={<Members />} />
           <Route path="/tasks" element={<Tasks />} />

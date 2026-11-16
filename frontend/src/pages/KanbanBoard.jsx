@@ -304,52 +304,6 @@ export default function KanbanBoard() {
     }),
   )
 
-  const loadTasks = useCallback(async () => {
-    if (!workspaceId) return
-
-    setIsLoading(true)
-    setLoadError('')
-    setUpdateError('')
-
-    try {
-      let allTasks = []
-      let offset = 0
-      let hasMore = true
-
-      while (hasMore) {
-        const response = await getTasks(workspaceId, {
-          limit: PAGE_SIZE,
-          offset,
-          sort_by: 'created_at',
-          sort_order: 'desc',
-        })
-
-        const pageItems = response.items || []
-
-        allTasks = [...allTasks, ...pageItems]
-
-        if (pageItems.length === 0) {
-          break
-        }
-
-        offset += pageItems.length
-        hasMore = Boolean(response.has_more)
-      }
-
-      setTasks(allTasks)
-    } catch (error) {
-      setTasks([])
-      setLoadError(
-        getRequestError(
-          error,
-          'Unable to load workspace tasks. Please try again.',
-        ),
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }, [workspaceId])
-
   const loadMembers = useCallback(async () => {
     if (!workspaceId) return
 

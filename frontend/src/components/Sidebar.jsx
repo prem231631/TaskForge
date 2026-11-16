@@ -225,6 +225,19 @@ export default function Sidebar() {
             </NavLink>
 
             <NavLink
+              to="/board"
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+              onClick={closeWorkspaceMenu}
+            >
+              <FolderKanban size={18} />
+              Kanban Board
+            </NavLink>
+
+            <NavLink
               to="/notifications"
               className={({ isActive }) =>
                 `task-sidebar__nav-item ${

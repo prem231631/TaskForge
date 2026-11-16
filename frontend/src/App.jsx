@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
 import Members from './pages/Members'
 import Tasks from './pages/Tasks'
+import KanbanBoard from './pages/KanbanBoard'
 import TaskDetails from './pages/TaskDetails'
 import Notifications from './pages/Notifications'
 import Profile from './pages/Profile'
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/members" element={<Members />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/board" element={<KanbanBoard />} />
           <Route path="/tasks/:taskId" element={<TaskDetails />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />

@@ -1,5 +1,10 @@
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle,
@@ -139,6 +144,7 @@ function SortableTaskCard({ task, members, disabled }) {
   })
 
   const dueDate = formatDueDate(task.due_date)
+  const assigneeName = getMemberName(task, members)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -190,13 +196,13 @@ function SortableTaskCard({ task, members, disabled }) {
       <div className="kanban-card__footer">
         <span
           className="kanban-card__assignee"
-          title={getMemberName(task, members)}
+          title={assigneeName}
         >
           <span className="kanban-card__avatar">
-            {getMemberName(task, members).charAt(0).toUpperCase()}
+            {assigneeName.charAt(0).toUpperCase()}
           </span>
           <span className="kanban-card__assignee-name">
-            {getMemberName(task, members)}
+            {assigneeName}
           </span>
         </span>
 
@@ -285,6 +291,7 @@ export default function KanbanBoard() {
   const [memberError, setMemberError] = useState('')
   const [updateError, setUpdateError] = useState('')
   const [isUpdatingTaskId, setIsUpdatingTaskId] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -298,12 +305,7 @@ export default function KanbanBoard() {
   )
 
   const loadTasks = useCallback(async () => {
-    if (!workspaceId) {
-      setTasks([])
-      setLoadError('')
-      setIsLoading(false)
-      return
-    }
+    if (!workspaceId) return
 
     setIsLoading(true)
     setLoadError('')
@@ -338,7 +340,10 @@ export default function KanbanBoard() {
     } catch (error) {
       setTasks([])
       setLoadError(
-        getRequestError(error, 'Unable to load workspace tasks. Please try again.'),
+        getRequestError(
+          error,
+          'Unable to load workspace tasks. Please try again.',
+        ),
       )
     } finally {
       setIsLoading(false)
@@ -346,11 +351,7 @@ export default function KanbanBoard() {
   }, [workspaceId])
 
   const loadMembers = useCallback(async () => {
-    if (!workspaceId) {
-      setMembers([])
-      setMemberError('')
-      return
-    }
+    if (!workspaceId) return
 
     setMemberError('')
 
@@ -366,12 +367,105 @@ export default function KanbanBoard() {
   }, [workspaceId])
 
   useEffect(() => {
-    loadTasks()
-  }, [loadTasks])
+    let cancelled = false
+
+    async function fetchTasks() {
+      if (!workspaceId) {
+        setTasks([])
+        setLoadError('')
+        setIsLoading(false)
+        return
+      }
+
+      setIsLoading(true)
+      setLoadError('')
+      setUpdateError('')
+
+      try {
+        let allTasks = []
+        let offset = 0
+        let hasMore = true
+
+        while (hasMore) {
+          const response = await getTasks(workspaceId, {
+            limit: PAGE_SIZE,
+            offset,
+            sort_by: 'created_at',
+            sort_order: 'desc',
+          })
+
+          if (cancelled) return
+
+          const pageItems = response.items || []
+          allTasks = [...allTasks, ...pageItems]
+
+          if (pageItems.length === 0) break
+
+          offset += pageItems.length
+          hasMore = Boolean(response.has_more)
+        }
+
+        if (!cancelled) {
+          setTasks(allTasks)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTasks([])
+          setLoadError(
+            getRequestError(
+              error,
+              'Unable to load workspace tasks. Please try again.',
+            ),
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void fetchTasks()
+
+    return () => {
+      cancelled = true
+    }
+  }, [workspaceId, refreshKey])
 
   useEffect(() => {
-    loadMembers()
-  }, [loadMembers])
+    let cancelled = false
+
+    async function fetchMembers() {
+      if (!workspaceId) {
+        setMembers([])
+        setMemberError('')
+        return
+      }
+
+      setMemberError('')
+
+      try {
+        const response = await getWorkspaceMembers(workspaceId)
+
+        if (!cancelled) {
+          setMembers(Array.isArray(response) ? response : [])
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMembers([])
+          setMemberError(
+            getRequestError(error, 'Unable to load workspace members.'),
+          )
+        }
+      }
+    }
+
+    void fetchMembers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [workspaceId])
 
   const tasksByStatus = useMemo(() => {
     return COLUMNS.reduce((result, column) => {
@@ -399,7 +493,7 @@ export default function KanbanBoard() {
 
     if (!task) return
 
-    let destinationStatus = COLUMNS.some(
+    const destinationStatus = COLUMNS.some(
       (column) => column.id === String(over.id),
     )
       ? String(over.id)
@@ -450,12 +544,19 @@ export default function KanbanBoard() {
       )
 
       setUpdateError(
-        getRequestError(error, 'Unable to update the task status. Please try again.'),
+        getRequestError(
+          error,
+          'Unable to update the task status. Please try again.',
+        ),
       )
     } finally {
       setIsUpdatingTaskId(null)
     }
   }
+
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((current) => current + 1)
+  }, [])
 
   return (
     <DashboardLayout>
@@ -486,7 +587,7 @@ export default function KanbanBoard() {
             <button
               type="button"
               className="kanban-page__refresh"
-              onClick={loadTasks}
+              onClick={handleRefresh}
               disabled={isLoading || !workspaceId}
             >
               <RefreshCw
@@ -557,7 +658,7 @@ export default function KanbanBoard() {
               <div className="kanban-message kanban-message--error">
                 <AlertCircle size={17} />
                 <span>{loadError}</span>
-                <button type="button" onClick={loadTasks}>
+                <button type="button" onClick={handleRefresh}>
                   Retry
                 </button>
               </div>

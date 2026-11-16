@@ -1,5 +1,4 @@
-﻿
-import logging
+﻿import logging
 import time
 
 from fastapi import FastAPI, Request
@@ -9,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.activities import router as activities_router
 from app.api.auth import router as auth_router
 from app.api.notifications import router as notifications_router
 from app.api.tasks import router as tasks_router
@@ -65,6 +65,13 @@ tags_metadata = [
             "manage notification read status."
         ),
     },
+    {
+        "name": "Activity",
+        "description": (
+            "View chronological activity history for workspaces. "
+            "Workspace membership is required."
+        ),
+    },
 ]
 
 
@@ -80,6 +87,7 @@ TaskForge is a team collaboration and task management platform.
 - **Task management:** Create, update, retrieve, and delete workspace tasks.
 - **Task organization:** Filter, sort, and paginate task lists.
 - **Notifications:** View notifications and manage read status.
+- **Activity history:** Review chronological workspace activity.
 
 ## Authentication
 
@@ -113,7 +121,6 @@ Protected endpoints require a valid bearer access token.
 )
 
 
-# Rate limiting configuration
 app.state.limiter = limiter
 app.add_exception_handler(
     RateLimitExceeded,
@@ -121,7 +128,6 @@ app.add_exception_handler(
 )
 
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -142,7 +148,6 @@ app.add_middleware(
 )
 
 
-# Centralized exception handlers
 app.add_exception_handler(
     StarletteHTTPException,
     http_exception_handler,
@@ -222,6 +227,7 @@ app.include_router(auth_router)
 app.include_router(workspaces_router)
 app.include_router(tasks_router)
 app.include_router(notifications_router)
+app.include_router(activities_router)
 
 
 @app.get("/", tags=["Health"])

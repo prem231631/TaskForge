@@ -1,4 +1,4 @@
-
+from app.models.activity import Activity
 from app.models.email_verification import EmailVerificationToken
 from app.models.notification import Notification
 from app.models.task import Task
@@ -12,4 +12,5 @@ __all__ = [
     "Task",
     "EmailVerificationToken",
     "Notification",
+    "Activity",
 ]

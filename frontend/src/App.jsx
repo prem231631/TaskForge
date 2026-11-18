@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import Home from './pages/Home'
@@ -9,6 +8,7 @@ import Tasks from './pages/Tasks'
 import KanbanBoard from './pages/KanbanBoard'
 import TaskDetails from './pages/TaskDetails'
 import Notifications from './pages/Notifications'
+import Activity from './pages/Activity'
 import Profile from './pages/Profile'
 import PasswordSecurity from './pages/PasswordSecurity'
 import Login from './pages/Login'
@@ -41,6 +41,7 @@ export default function App() {
           <Route path="/board" element={<KanbanBoard />} />
           <Route path="/tasks/:taskId" element={<TaskDetails />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/activity" element={<Activity />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/security" element={<PasswordSecurity />} />
         </Route>

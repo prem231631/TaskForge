@@ -327,7 +327,7 @@ def delete_task_endpoint(
     require_workspace_membership(db, workspace_id, current_user)
 
     try:
-        deleted = delete_task(db, workspace_id, task_id)
+        deleted = delete_task(db, workspace_id, task_id, current_user)
     except SQLAlchemyError as exc:
         db.rollback()
         raise HTTPException(

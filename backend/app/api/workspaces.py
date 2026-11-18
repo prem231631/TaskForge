@@ -387,7 +387,7 @@ def remove_workspace_member_endpoint(
     require_workspace_owner(db, workspace_id, current_user)
 
     try:
-        removed = remove_workspace_member(db, workspace_id, user_id)
+        removed = remove_workspace_member(db, workspace_id, user_id, current_user)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

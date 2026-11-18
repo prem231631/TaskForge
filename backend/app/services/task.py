@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Task, User, Workspace, WorkspaceMembership
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services.activity import create_activity
 from app.services.notification import create_notification
 
 
@@ -70,6 +71,15 @@ def create_task(
     try:
         db.add(task)
         db.flush()
+
+        create_activity(
+            db,
+            workspace_id=workspace_id,
+            task_id=task.id,
+            actor_id=creator.id,
+            action_type="task_created",
+            description=f"{creator.full_name} created the task '{task.title}'.",
+        )
 
         if (
             task.assigned_to_id is not None
@@ -193,19 +203,138 @@ def update_task(
             updates["assigned_to_id"],
         )
 
+    original_values = {
+        field: getattr(task, field)
+        for field in updates
+    }
+    actual_changes = {
+        field: value
+        for field, value in updates.items()
+        if original_values[field] != value
+    }
+
     previous_assignee_id = task.assigned_to_id
     assignment_changed = (
-        "assigned_to_id" in updates
-        and updates["assigned_to_id"] != previous_assignee_id
+        "assigned_to_id" in actual_changes
+    )
+
+    previous_assignee = (
+        db.get(User, previous_assignee_id)
+        if assignment_changed and previous_assignee_id is not None
+        else None
+    )
+
+    new_assignee_id = (
+        actual_changes.get("assigned_to_id")
+        if assignment_changed
+        else previous_assignee_id
+    )
+    new_assignee = (
+        db.get(User, new_assignee_id)
+        if assignment_changed and new_assignee_id is not None
+        else None
     )
 
     try:
-        for field, value in updates.items():
+        for field, value in actual_changes.items():
             setattr(task, field, value)
 
         db.flush()
 
         workspace = db.get(Workspace, workspace_id)
+
+        if actual_changes:
+            if "status" in actual_changes:
+                if task.status == "done":
+                    create_activity(
+                        db,
+                        workspace_id=workspace_id,
+                        task_id=task.id,
+                        actor_id=actor.id,
+                        action_type="task_completed",
+                        description=(
+                            f"{actor.full_name} completed the task "
+                            f"'{task.title}'."
+                        ),
+                    )
+                else:
+                    create_activity(
+                        db,
+                        workspace_id=workspace_id,
+                        task_id=task.id,
+                        actor_id=actor.id,
+                        action_type="task_status_changed",
+                        description=(
+                            f"{actor.full_name} changed the status of "
+                            f"'{task.title}' from "
+                            f"'{original_values['status']}' to "
+                            f"'{task.status}'."
+                        ),
+                    )
+
+            descriptive_fields = {
+                "title",
+                "description",
+                "priority",
+                "due_date",
+            }
+            changed_descriptive_fields = (
+                descriptive_fields.intersection(actual_changes)
+            )
+
+            if changed_descriptive_fields:
+                field_names = ", ".join(
+                    sorted(changed_descriptive_fields)
+                )
+                create_activity(
+                    db,
+                    workspace_id=workspace_id,
+                    task_id=task.id,
+                    actor_id=actor.id,
+                    action_type="task_updated",
+                    description=(
+                        f"{actor.full_name} updated {field_names} "
+                        f"for the task '{task.title}'."
+                    ),
+                )
+
+            if assignment_changed:
+                if new_assignee is None:
+                    action_type = "task_unassigned"
+                    description = (
+                        f"{actor.full_name} removed the assignee "
+                        f"from the task '{task.title}'."
+                    )
+                    target_user_id = previous_assignee_id
+                else:
+                    action_type = (
+                        "task_reassigned"
+                        if previous_assignee_id is not None
+                        else "task_assigned"
+                    )
+                    if previous_assignee is not None:
+                        description = (
+                            f"{actor.full_name} reassigned the task "
+                            f"'{task.title}' from "
+                            f"{previous_assignee.full_name} to "
+                            f"{new_assignee.full_name}."
+                        )
+                    else:
+                        description = (
+                            f"{actor.full_name} assigned the task "
+                            f"'{task.title}' to {new_assignee.full_name}."
+                        )
+                    target_user_id = new_assignee.id
+
+                create_activity(
+                    db,
+                    workspace_id=workspace_id,
+                    task_id=task.id,
+                    actor_id=actor.id,
+                    target_user_id=target_user_id,
+                    action_type=action_type,
+                    description=description,
+                )
 
         notified_user_ids: set[int] = set()
 
@@ -273,6 +402,7 @@ def delete_task(
     db: Session,
     workspace_id: int,
     task_id: int,
+    actor: User,
 ) -> bool:
     task = get_workspace_task(db, workspace_id, task_id)
 
@@ -280,6 +410,17 @@ def delete_task(
         return False
 
     try:
+        create_activity(
+            db,
+            workspace_id=workspace_id,
+            task_id=task.id,
+            actor_id=actor.id,
+            action_type="task_deleted",
+            description=(
+                f"{actor.full_name} deleted the task '{task.title}'."
+            ),
+        )
+
         db.delete(task)
         db.commit()
     except Exception:

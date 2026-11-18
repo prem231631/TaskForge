@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models import User, Workspace, WorkspaceMembership
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate
+from app.services.activity import create_activity
 from app.services.notification import create_notification
 
 
@@ -157,6 +158,7 @@ def add_workspace_member(
 
     try:
         db.add(membership)
+        db.flush()
 
         create_notification(
             db,
@@ -168,6 +170,18 @@ def add_workspace_member(
             message=(
                 f"{actor.full_name} added you to "
                 f"the workspace '{workspace.name}'."
+            ),
+        )
+
+        create_activity(
+            db,
+            workspace_id=workspace.id,
+            actor_id=actor.id,
+            target_user_id=user.id,
+            action_type="workspace_member_added",
+            description=(
+                f"{actor.full_name} added {user.full_name} "
+                f"to the workspace '{workspace.name}'."
             ),
         )
 
@@ -189,6 +203,7 @@ def remove_workspace_member(
     db: Session,
     workspace_id: int,
     user_id: int,
+    actor: User,
 ) -> bool:
     membership = get_workspace_member(
         db,
@@ -202,7 +217,25 @@ def remove_workspace_member(
     if membership.role == "owner":
         raise ValueError("The workspace owner cannot be removed.")
 
+    workspace = db.get(Workspace, workspace_id)
+    member = db.get(User, user_id)
+
+    if workspace is None or member is None:
+        return False
+
     try:
+        create_activity(
+            db,
+            workspace_id=workspace_id,
+            actor_id=actor.id,
+            target_user_id=member.id,
+            action_type="workspace_member_removed",
+            description=(
+                f"{actor.full_name} removed {member.full_name} "
+                f"from the workspace '{workspace.name}'."
+            ),
+        )
+
         db.delete(membership)
         db.commit()
     except Exception:

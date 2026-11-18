@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
@@ -14,18 +13,21 @@ import {
   Zap,
   CircleHelp,
   Bell,
+  Activity as ActivityIcon,
 } from 'lucide-react'
 
 import { useWorkspace } from '../context/useWorkspace'
 import './Sidebar.css'
 
 function getWorkspaceInitials(name = '') {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('') || 'WS'
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join('') || 'WS'
+  )
 }
 
 export default function Sidebar() {
@@ -235,6 +237,19 @@ export default function Sidebar() {
             >
               <FolderKanban size={18} />
               Kanban Board
+            </NavLink>
+
+            <NavLink
+              to="/activity"
+              className={({ isActive }) =>
+                `task-sidebar__nav-item ${
+                  isActive ? 'task-sidebar__nav-item--active' : ''
+                }`
+              }
+              onClick={closeWorkspaceMenu}
+            >
+              <ActivityIcon size={18} />
+              Activity Log
             </NavLink>
 
             <NavLink

@@ -6,8 +6,8 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --color-primary: #6755e8;
-  --color-primary-hover: #5140cc;
+  --color-primary: #2e15e8;
+  --color-primary-hover: #240dd8;
   --color-primary-soft: #eeeaff;
 
   --color-background: #f7f7fa;
@@ -42,8 +42,8 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-primary: #8979ff;
-  --color-primary-hover: #a094ff;
+  --color-primary: #2e15e8;
+  --color-primary-hover: #240dd8;
   --color-primary-soft: #302a50;
 
   --color-background: #111118;

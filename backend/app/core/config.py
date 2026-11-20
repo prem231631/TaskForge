@@ -22,13 +22,8 @@ class Settings(BaseSettings):
 
     email_verification_expire_minutes: int = 30
 
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_username: str = ""
-    smtp_password: str = ""
-    smtp_sender_email: str = ""
-    smtp_sender_name: str = "TaskForge"
-    smtp_use_tls: bool = True
+    resend_api_key: str = ""
+    resend_from_email: str = ""
 
     frontend_base_url: str = "http://localhost:5173"
 
@@ -90,9 +85,6 @@ class Settings(BaseSettings):
                 "EMAIL_VERIFICATION_EXPIRE_MINUTES must be greater than zero."
             )
 
-        if not 1 <= self.smtp_port <= 65535:
-            raise ValueError("SMTP_PORT must be between 1 and 65535.")
-
         if not self.frontend_base_url.startswith(("http://", "https://")):
             raise ValueError(
                 "FRONTEND_BASE_URL must be a valid HTTP or HTTPS URL."
@@ -133,16 +125,14 @@ class Settings(BaseSettings):
                     "Production CORS origins cannot contain localhost."
                 )
 
-            if not all(
-                [
-                    self.smtp_host,
-                    self.smtp_username,
-                    self.smtp_password,
-                    self.smtp_sender_email,
-                ]
-            ):
+            if not self.resend_api_key:
                 raise ValueError(
-                    "Production requires complete SMTP configuration."
+                    "Production requires RESEND_API_KEY."
+                )
+
+            if not self.resend_from_email:
+                raise ValueError(
+                    "Production requires RESEND_FROM_EMAIL."
                 )
 
             if not self.frontend_base_url.startswith("https://"):

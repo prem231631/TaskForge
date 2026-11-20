@@ -1,14 +1,16 @@
 
 import html
+import json
 import logging
-import smtplib
-from email.message import EmailMessage
-from email.utils import formataddr
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+RESEND_API_URL = "https://api.resend.com/emails"
 
 
 def send_verification_email(
@@ -16,21 +18,14 @@ def send_verification_email(
     recipient_name: str,
     verification_token: str,
 ) -> None:
-    """Send an email containing the account verification link."""
+    """Send an account verification email using the Resend API."""
 
     settings = get_settings()
 
-    required_settings = [
-        settings.smtp_host,
-        settings.smtp_username,
-        settings.smtp_password,
-        settings.smtp_sender_email,
-    ]
-
-    if not all(required_settings):
+    if not settings.resend_api_key or not settings.resend_from_email:
         raise RuntimeError(
             "Email delivery is not configured. "
-            "Please configure the SMTP environment variables."
+            "Please configure RESEND_API_KEY and RESEND_FROM_EMAIL."
         )
 
     query_string = urlencode({"token": verification_token})
@@ -43,15 +38,7 @@ def send_verification_email(
     safe_name = html.escape(recipient_name, quote=True)
     safe_url = html.escape(verification_url, quote=True)
 
-    message = EmailMessage()
-    message["Subject"] = "Verify your TaskForge email address"
-    message["From"] = formataddr(
-        (settings.smtp_sender_name, settings.smtp_sender_email)
-    )
-    message["To"] = recipient_email
-
-    message.set_content(
-        f"""Hello {recipient_name},
+    text_content = f"""Hello {recipient_name},
 
 Thank you for creating your TaskForge account.
 
@@ -67,10 +54,8 @@ If you did not create this account, you can ignore this email.
 Regards,
 TaskForge Team
 """
-    )
 
-    message.add_alternative(
-        f"""\
+    html_content = f"""\
 <html>
     <body style="font-family: Arial, sans-serif; color: #252533;">
         <div style="max-width: 560px; margin: 30px auto; padding: 32px;
@@ -107,31 +92,70 @@ TaskForge Team
         </div>
     </body>
 </html>
-""",
-        subtype="html",
+"""
+
+    payload = {
+        "from": settings.resend_from_email,
+        "to": [recipient_email],
+        "subject": "Verify your TaskForge email address",
+        "text": text_content,
+        "html": html_content,
+    }
+
+    request = Request(
+        RESEND_API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "TaskForge/1.0",
+        },
+        method="POST",
     )
 
     try:
-        with smtplib.SMTP(
-            settings.smtp_host,
-            settings.smtp_port,
-            timeout=15,
-        ) as server:
-            server.ehlo()
+        with urlopen(request, timeout=20) as response:
+            response_data = json.loads(response.read().decode("utf-8"))
 
-            if settings.smtp_use_tls:
-                server.starttls()
-                server.ehlo()
-
-            server.login(
-                settings.smtp_username,
-                settings.smtp_password,
+        if not response_data.get("id"):
+            logger.error(
+                "Resend API returned a response without an email ID."
+            )
+            raise RuntimeError(
+                "Unable to send the verification email. "
+                "Please try again later."
             )
 
-            server.send_message(message)
+        logger.info(
+            "TaskForge verification email accepted by Resend. "
+            "Email ID: %s",
+            response_data["id"],
+        )
 
-    except (smtplib.SMTPException, OSError):
-        logger.exception("TaskForge verification email delivery failed.")
+    except HTTPError as exc:
+        try:
+            error_body = exc.read().decode("utf-8", errors="replace")
+        except OSError:
+            error_body = "No error response body available."
+
+        logger.error(
+            "Resend API rejected the verification email. "
+            "HTTP status: %s. Response: %s",
+            exc.code,
+            error_body[:2000],
+        )
+
+        raise RuntimeError(
+            "Unable to send the verification email. "
+            "Please try again later."
+        ) from None
+
+    except (URLError, TimeoutError, OSError, ValueError):
+        logger.exception(
+            "TaskForge verification email delivery through Resend failed."
+        )
+
         raise RuntimeError(
             "Unable to send the verification email. "
             "Please try again later."
